@@ -1,0 +1,2639 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔋 Battery Master Center — Universal</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a2e;
+            --bg-card-hover: #222240;
+            --accent-green: #00e676;
+            --accent-yellow: #ffd600;
+            --accent-orange: #ff9100;
+            --accent-red: #ff1744;
+            --accent-blue: #448aff;
+            --accent-purple: #7c4dff;
+            --accent-cyan: #00e5ff;
+            --accent-pink: #ff4081;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0c0;
+            --text-muted: #6a6a80;
+            --border-color: #2a2a40;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-animation {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 0; overflow: hidden; pointer-events: none;
+        }
+
+        .bg-orb {
+            position: absolute; border-radius: 50%; filter: blur(80px);
+            opacity: 0.12; animation: orbFloat 20s ease-in-out infinite;
+        }
+
+        .bg-orb:nth-child(1) { width: 400px; height: 400px; background: var(--accent-green); top: -100px; right: -100px; }
+        .bg-orb:nth-child(2) { width: 300px; height: 300px; background: var(--accent-purple); bottom: -50px; left: -50px; animation-delay: -7s; }
+        .bg-orb:nth-child(3) { width: 250px; height: 250px; background: var(--accent-cyan); top: 50%; left: 50%; animation-delay: -14s; }
+
+        @keyframes orbFloat {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            25% { transform: translate(50px, -50px) scale(1.1); }
+            50% { transform: translate(-30px, 30px) scale(0.9); }
+            75% { transform: translate(40px, 40px) scale(1.05); }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-primary); }
+        ::-webkit-scrollbar-thumb { background: var(--accent-purple); border-radius: 3px; }
+
+        .container {
+            position: relative; z-index: 1;
+            max-width: 1200px; margin: 0 auto; padding: 20px;
+        }
+
+        .header { text-align: center; padding: 30px 0 20px; }
+
+        .header-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(124, 77, 255, 0.15); border: 1px solid rgba(124, 77, 255, 0.3);
+            padding: 6px 16px; border-radius: 50px; font-size: 11px; font-weight: 600;
+            color: var(--accent-purple); margin-bottom: 14px; letter-spacing: 1px; text-transform: uppercase;
+        }
+
+        .header-badge .dot {
+            width: 6px; height: 6px; background: var(--accent-green);
+            border-radius: 50%; animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .header h1 {
+            font-size: clamp(24px, 5vw, 42px); font-weight: 900;
+            background: linear-gradient(135deg, #fff, #b0b0c0);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; line-height: 1.2; margin-bottom: 6px;
+        }
+
+        .header h1 span {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        .header p { color: var(--text-secondary); font-size: 14px; max-width: 500px; margin: 0 auto; }
+
+        /* Device Detection Banner */
+        .device-banner {
+            background: linear-gradient(135deg, rgba(124,77,255,0.1), rgba(0,229,255,0.1));
+            border: 1px solid rgba(124,77,255,0.25);
+            border-radius: 16px; padding: 20px; margin: 16px 0 24px;
+            display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+        }
+
+        .device-banner .device-icon {
+            font-size: 48px; flex-shrink: 0;
+        }
+
+        .device-banner .device-info { flex: 1; min-width: 200px; }
+        .device-banner .device-name { font-size: 18px; font-weight: 800; margin-bottom: 4px; }
+        .device-banner .device-specs { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+
+        .device-banner .device-battery-badge {
+            display: flex; flex-direction: column; align-items: center;
+            background: rgba(0,0,0,0.3); border-radius: 12px; padding: 12px 20px;
+            min-width: 100px;
+        }
+
+        .device-banner .device-battery-badge .bat-val {
+            font-size: 28px; font-weight: 900;
+        }
+
+        .device-banner .device-battery-badge .bat-label {
+            font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+        }
+
+        /* Live Indicator */
+        .live-indicator {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(255,23,68,0.15); border: 1px solid rgba(255,23,68,0.3);
+            padding: 4px 12px; border-radius: 20px; font-size: 10px;
+            font-weight: 700; color: var(--accent-red); text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .live-indicator .live-dot {
+            width: 8px; height: 8px; background: var(--accent-red);
+            border-radius: 50%; animation: pulse 1s ease-in-out infinite;
+        }
+
+        /* Phone Info Bar */
+        .phone-info-bar {
+            display: flex; justify-content: center; gap: 10px;
+            flex-wrap: wrap; margin: 16px 0 24px;
+        }
+
+        .info-chip {
+            display: flex; align-items: center; gap: 6px;
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            padding: 6px 14px; border-radius: 10px; font-size: 12px; color: var(--text-secondary);
+        }
+
+        .info-chip .icon { font-size: 14px; }
+        .info-chip strong { color: var(--text-primary); }
+
+        /* Nav Tabs */
+        .nav-tabs {
+            display: flex; gap: 4px; overflow-x: auto; padding: 4px;
+            background: var(--bg-secondary); border-radius: 14px;
+            border: 1px solid var(--border-color); margin-bottom: 24px;
+            scrollbar-width: none;
+        }
+
+        .nav-tabs::-webkit-scrollbar { display: none; }
+
+        .nav-tab {
+            flex-shrink: 0; padding: 10px 16px; border-radius: 10px;
+            border: none; background: transparent; color: var(--text-muted);
+            font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s ease;
+            display: flex; align-items: center; gap: 6px; white-space: nowrap;
+        }
+
+        .nav-tab:hover { color: var(--text-secondary); background: rgba(255,255,255,0.05); }
+        .nav-tab.active { background: var(--accent-purple); color: white; box-shadow: 0 4px 15px rgba(124,77,255,0.4); }
+        .nav-tab .tab-icon { font-size: 14px; }
+
+        /* Tab Content */
+        .tab-content { display: none; animation: fadeInUp 0.4s ease; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 18px; padding: 22px; margin-bottom: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover { border-color: rgba(124,77,255,0.25); }
+
+        .card-title {
+            font-size: 17px; font-weight: 700; margin-bottom: 14px;
+            display: flex; align-items: center; gap: 10px;
+        }
+
+        .card-title .emoji { font-size: 22px; }
+
+        /* Battery Visualizer */
+        .battery-visualizer {
+            display: flex; justify-content: center; align-items: center;
+            padding: 24px 0; gap: 40px; flex-wrap: wrap;
+        }
+
+        .battery-3d { position: relative; width: 160px; height: 290px; }
+
+        .battery-body {
+            width: 100%; height: 100%; border: 3px solid var(--border-color);
+            border-radius: 18px; position: relative; overflow: hidden;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .battery-tip {
+            width: 50px; height: 10px; background: var(--border-color);
+            border-radius: 5px 5px 0 0; position: absolute;
+            top: -10px; left: 50%; transform: translateX(-50%);
+        }
+
+        .battery-fill {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            transition: all 0.8s ease; border-radius: 0 0 15px 15px;
+        }
+
+        .battery-fill.green { background: linear-gradient(180deg, #00e676, #00c853); }
+        .battery-fill.yellow { background: linear-gradient(180deg, #ffd600, #f9a825); }
+        .battery-fill.orange { background: linear-gradient(180deg, #ff9100, #e65100); }
+        .battery-fill.red { background: linear-gradient(180deg, #ff1744, #b71c1c); }
+
+        .battery-fill::after {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 40%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.2), transparent);
+        }
+
+        .battery-percent-display {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 38px; font-weight: 900;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5); z-index: 2;
+        }
+
+        .battery-percent-display span { font-size: 18px; font-weight: 600; }
+
+        .charging-bolt {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 50px; z-index: 3;
+            animation: chargePulse 1.5s ease-in-out infinite;
+            display: none;
+        }
+
+        .charging-bolt.show { display: block; }
+
+        @keyframes chargePulse {
+            0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.8); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+        }
+
+        .battery-side-info {
+            display: flex; flex-direction: column; gap: 12px; min-width: 200px;
+        }
+
+        .side-info-item {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px; padding: 12px 16px;
+        }
+
+        .side-info-item .si-label {
+            font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 4px;
+        }
+
+        .side-info-item .si-value {
+            font-size: 18px; font-weight: 800;
+        }
+
+        .side-info-item .si-sub {
+            font-size: 11px; color: var(--text-muted); margin-top: 2px;
+        }
+
+        /* Battery Status Text */
+        .battery-status-text {
+            text-align: center; margin: 12px 0; font-size: 13px; font-weight: 600;
+            padding: 8px 16px; border-radius: 10px; display: inline-block;
+        }
+
+        /* Battery Detail Grid */
+        .battery-detail-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 10px; margin-top: 18px;
+        }
+
+        .battery-detail-item {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px; padding: 14px; text-align: center;
+        }
+
+        .battery-detail-item .label {
+            font-size: 10px; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 1px; margin-bottom: 4px;
+        }
+
+        .battery-detail-item .value { font-size: 20px; font-weight: 800; }
+        .battery-detail-item .sub { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+
+        /* Slider */
+        .battery-slider-container { max-width: 400px; margin: 16px auto; }
+
+        .battery-slider {
+            width: 100%; -webkit-appearance: none; appearance: none;
+            height: 8px; border-radius: 4px;
+            background: linear-gradient(90deg, var(--accent-red), var(--accent-orange), var(--accent-yellow), var(--accent-green));
+            outline: none;
+        }
+
+        .battery-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 26px; height: 26px;
+            border-radius: 50%; background: white; cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3); border: 3px solid var(--accent-purple);
+        }
+
+        .battery-slider::-moz-range-thumb {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: white; cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3); border: 3px solid var(--accent-purple);
+        }
+
+        /* Table */
+        .table-container {
+            max-height: 550px; overflow-y: auto;
+            border-radius: 12px; border: 1px solid var(--border-color);
+        }
+
+        .percent-table {
+            width: 100%; border-collapse: separate; border-spacing: 0 3px;
+        }
+
+        .percent-table thead th {
+            padding: 10px 14px; text-align: left; font-size: 10px;
+            text-transform: uppercase; letter-spacing: 1px;
+            color: var(--text-muted); font-weight: 600;
+            position: sticky; top: 0; background: var(--bg-card); z-index: 1;
+        }
+
+        .percent-table tbody tr {
+            background: rgba(255,255,255,0.02); transition: all 0.2s ease;
+        }
+
+        .percent-table tbody tr:hover {
+            background: rgba(124,77,255,0.1); transform: scale(1.005);
+        }
+
+        .percent-table tbody td {
+            padding: 10px 14px; font-size: 12px;
+        }
+
+        .percent-table tbody td:first-child { border-radius: 8px 0 0 8px; }
+        .percent-table tbody td:last-child { border-radius: 0 8px 8px 0; }
+
+        .percent-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 34px; height: 34px; border-radius: 8px; font-weight: 800; font-size: 13px;
+        }
+
+        .percent-badge.green { background: rgba(0,230,118,0.15); color: var(--accent-green); }
+        .percent-badge.yellow { background: rgba(255,214,0,0.15); color: var(--accent-yellow); }
+        .percent-badge.orange { background: rgba(255,145,0,0.15); color: var(--accent-orange); }
+        .percent-badge.red { background: rgba(255,23,68,0.15); color: var(--accent-red); }
+
+        .status-dot {
+            display: inline-block; width: 7px; height: 7px;
+            border-radius: 50%; margin-right: 5px;
+        }
+
+        .status-dot.green { background: var(--accent-green); box-shadow: 0 0 6px var(--accent-green); }
+        .status-dot.yellow { background: var(--accent-yellow); box-shadow: 0 0 6px var(--accent-yellow); }
+        .status-dot.orange { background: var(--accent-orange); box-shadow: 0 0 6px var(--accent-orange); }
+        .status-dot.red { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
+
+        .rating-stars { color: var(--accent-yellow); font-size: 11px; letter-spacing: 1px; }
+
+        /* Calibration Steps */
+        .calibration-steps { position: relative; }
+
+        .calibration-step {
+            display: flex; gap: 16px; padding: 16px 0; position: relative;
+        }
+
+        .calibration-step:not(:last-child)::after {
+            content: ''; position: absolute; left: 21px; top: 56px; bottom: 0;
+            width: 2px; background: linear-gradient(180deg, var(--accent-purple), transparent);
+        }
+
+        .step-number {
+            flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; font-weight: 800; position: relative; z-index: 1;
+        }
+
+        .step-number.green { background: rgba(0,230,118,0.15); color: var(--accent-green); border: 1px solid rgba(0,230,118,0.3); }
+        .step-number.blue { background: rgba(68,138,255,0.15); color: var(--accent-blue); border: 1px solid rgba(68,138,255,0.3); }
+        .step-number.purple { background: rgba(124,77,255,0.15); color: var(--accent-purple); border: 1px solid rgba(124,77,255,0.3); }
+        .step-number.orange { background: rgba(255,145,0,0.15); color: var(--accent-orange); border: 1px solid rgba(255,145,0,0.3); }
+        .step-number.cyan { background: rgba(0,229,255,0.15); color: var(--accent-cyan); border: 1px solid rgba(0,229,255,0.3); }
+        .step-number.red { background: rgba(255,23,68,0.15); color: var(--accent-red); border: 1px solid rgba(255,23,68,0.3); }
+
+        .step-content { flex: 1; }
+        .step-content h3 { font-size: 15px; font-weight: 700; margin-bottom: 5px; }
+        .step-content p { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+
+        .step-content .warning-box, .step-content .info-box, .step-content .success-box {
+            border-radius: 10px; padding: 10px 14px; margin-top: 8px;
+            font-size: 11px; display: flex; align-items: flex-start; gap: 8px;
+        }
+
+        .warning-box { background: rgba(255,145,0,0.1); border: 1px solid rgba(255,145,0,0.2); color: var(--accent-orange); }
+        .info-box { background: rgba(68,138,255,0.1); border: 1px solid rgba(68,138,255,0.2); color: var(--accent-blue); }
+        .success-box { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.2); color: var(--accent-green); }
+
+        /* Optimization Grid */
+        .opt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+
+        .opt-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px; padding: 18px; transition: all 0.3s ease;
+        }
+
+        .opt-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(124,77,255,0.3); transform: translateY(-2px); }
+        .opt-card .opt-icon { font-size: 28px; margin-bottom: 10px; }
+        .opt-card h3 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+        .opt-card p { font-size: 11px; color: var(--text-secondary); line-height: 1.6; }
+
+        .opt-tag {
+            display: inline-block; padding: 3px 8px; border-radius: 5px;
+            font-size: 9px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.5px; margin-top: 8px;
+        }
+
+        .opt-tag.high { background: rgba(255,23,68,0.15); color: var(--accent-red); }
+        .opt-tag.medium { background: rgba(255,145,0,0.15); color: var(--accent-orange); }
+        .opt-tag.low { background: rgba(0,230,118,0.15); color: var(--accent-green); }
+
+        /* Temperature Zones */
+        .temp-zones { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 14px; }
+
+        .temp-zone { border-radius: 12px; padding: 16px; text-align: center; border: 1px solid; }
+        .temp-zone.cold { background: rgba(0,229,255,0.05); border-color: rgba(0,229,255,0.2); }
+        .temp-zone.optimal { background: rgba(0,230,118,0.05); border-color: rgba(0,230,118,0.2); }
+        .temp-zone.warm { background: rgba(255,214,0,0.05); border-color: rgba(255,214,0,0.2); }
+        .temp-zone.hot { background: rgba(255,145,0,0.05); border-color: rgba(255,145,0,0.2); }
+        .temp-zone.danger { background: rgba(255,23,68,0.05); border-color: rgba(255,23,68,0.2); }
+
+        .temp-zone .temp-icon { font-size: 30px; margin-bottom: 6px; }
+        .temp-zone .temp-range { font-size: 18px; font-weight: 800; margin-bottom: 3px; }
+        .temp-zone .temp-label { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+        .temp-zone .temp-desc { font-size: 10px; color: var(--text-muted); line-height: 1.5; }
+
+        /* Checklist */
+        .checklist { list-style: none; }
+        .checklist li {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 12px; color: var(--text-secondary); line-height: 1.5;
+        }
+        .checklist li:last-child { border-bottom: none; }
+
+        .check-icon {
+            flex-shrink: 0; width: 20px; height: 20px; border-radius: 5px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; margin-top: 1px;
+        }
+
+        .check-icon.do { background: rgba(0,230,118,0.15); color: var(--accent-green); }
+        .check-icon.dont { background: rgba(255,23,68,0.15); color: var(--accent-red); }
+
+        /* Comparison Bar */
+        .comparison-bar { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+        .comparison-bar .bar-label { font-size: 11px; color: var(--text-muted); width: 80px; flex-shrink: 0; }
+        .comparison-bar .bar-track { flex: 1; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
+        .comparison-bar .bar-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+        .comparison-bar .bar-value { font-size: 11px; font-weight: 700; width: 45px; text-align: right; flex-shrink: 0; }
+
+        /* Alert Banner */
+        .alert-banner {
+            border-radius: 12px; padding: 14px 18px; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 10px; font-size: 12px; line-height: 1.5;
+        }
+
+        .alert-banner.info { background: rgba(68,138,255,0.1); border: 1px solid rgba(68,138,255,0.2); color: var(--accent-blue); }
+        .alert-banner.warning { background: rgba(255,145,0,0.1); border: 1px solid rgba(255,145,0,0.2); color: var(--accent-orange); }
+        .alert-banner.success { background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.2); color: var(--accent-green); }
+        .alert-banner .alert-icon { font-size: 20px; flex-shrink: 0; }
+
+        /* Toggle */
+        .toggle-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .toggle-row:last-child { border-bottom: none; }
+        .toggle-info { flex: 1; }
+        .toggle-info .toggle-title { font-size: 13px; font-weight: 600; }
+        .toggle-info .toggle-desc { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+        .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; margin-left: 12px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .toggle-slider-el {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.1); border-radius: 12px; transition: 0.3s;
+        }
+        .toggle-slider-el::before {
+            content: ''; position: absolute; height: 18px; width: 18px;
+            left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s;
+        }
+        .toggle-switch input:checked + .toggle-slider-el { background: var(--accent-green); }
+        .toggle-switch input:checked + .toggle-slider-el::before { transform: translateX(20px); }
+
+        /* Myth vs Fact */
+        .myth-fact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .myth-box, .fact-box { border-radius: 10px; padding: 14px; border: 1px solid; }
+        .myth-box { background: rgba(255,23,68,0.05); border-color: rgba(255,23,68,0.15); }
+        .fact-box { background: rgba(0,230,118,0.05); border-color: rgba(0,230,118,0.15); }
+        .myth-box .mf-label, .fact-box .mf-label { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .myth-box .mf-label { color: var(--accent-red); }
+        .fact-box .mf-label { color: var(--accent-green); }
+        .myth-box p, .fact-box p { font-size: 11px; line-height: 1.5; color: var(--text-secondary); }
+
+        /* SOT Estimator */
+        .sot-estimator { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 14px; }
+        .sot-item {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px; padding: 14px; text-align: center;
+        }
+        .sot-item .sot-icon { font-size: 24px; margin-bottom: 6px; }
+        .sot-item .sot-activity { font-size: 11px; font-weight: 600; margin-bottom: 3px; }
+        .sot-item .sot-hours { font-size: 22px; font-weight: 900; }
+        .sot-item .sot-unit { font-size: 10px; color: var(--text-muted); }
+
+        /* Quick Actions */
+        .quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin-top: 14px; }
+        .quick-action-btn {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 14px 10px; text-align: center;
+            cursor: pointer; transition: all 0.3s ease; color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+        }
+        .quick-action-btn:hover { background: rgba(124,77,255,0.15); border-color: rgba(124,77,255,0.3); transform: translateY(-2px); }
+        .quick-action-btn .qa-icon { font-size: 22px; margin-bottom: 4px; }
+        .quick-action-btn .qa-label { font-size: 10px; font-weight: 600; color: var(--text-secondary); }
+
+        /* Stats Row */
+        .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 16px 0; }
+        .stat-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px; padding: 14px; text-align: center;
+        }
+        .stat-card .stat-value { font-size: 24px; font-weight: 900; }
+        .stat-card .stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+
+        /* Glow */
+        .glow-green { text-shadow: 0 0 20px rgba(0,230,118,0.5); }
+        .glow-red { text-shadow: 0 0 20px rgba(255,23,68,0.5); }
+        .glow-yellow { text-shadow: 0 0 20px rgba(255,214,0,0.5); }
+        .glow-blue { text-shadow: 0 0 20px rgba(68,138,255,0.5); }
+        .glow-cyan { text-shadow: 0 0 20px rgba(0,229,255,0.5); }
+
+        /* Best/Worst Tags */
+        .best-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: rgba(0,230,118,0.12); color: var(--accent-green);
+            padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+        }
+        .worst-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            background: rgba(255,23,68,0.12); color: var(--accent-red);
+            padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase;
+        }
+
+        /* Footer */
+        .footer { text-align: center; padding: 30px 0 20px; color: var(--text-muted); font-size: 11px; }
+
+        /* API Not Supported */
+        .api-fallback {
+            background: rgba(255,145,0,0.08); border: 1px solid rgba(255,145,0,0.2);
+            border-radius: 12px; padding: 16px; margin-bottom: 16px;
+            font-size: 12px; color: var(--accent-orange); text-align: center;
+        }
+
+        /* Real-time chart */
+        .chart-container {
+            width: 100%; height: 120px; background: rgba(0,0,0,0.2);
+            border-radius: 12px; margin-top: 12px; overflow: hidden;
+            position: relative;
+        }
+
+        .chart-canvas { width: 100%; height: 100%; }
+
+        /* History log */
+        .history-log {
+            max-height: 200px; overflow-y: auto; margin-top: 12px;
+        }
+
+        .history-entry {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.03);
+            font-size: 11px;
+        }
+
+        .history-entry .he-time { color: var(--text-muted); font-family: monospace; }
+        .history-entry .he-level { font-weight: 700; }
+        .history-entry .he-status { font-size: 10px; padding: 2px 8px; border-radius: 4px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            .header { padding: 20px 0 16px; }
+            .card { padding: 16px; border-radius: 14px; }
+            .battery-3d { width: 130px; height: 240px; }
+            .battery-percent-display { font-size: 28px; }
+            .battery-visualizer { gap: 20px; }
+            .nav-tab { padding: 8px 12px; font-size: 11px; }
+            .opt-grid { grid-template-columns: 1fr; }
+            .temp-zones { grid-template-columns: repeat(2, 1fr); }
+            .myth-fact-grid { grid-template-columns: 1fr; }
+            .device-banner { flex-direction: column; text-align: center; }
+            .device-banner .device-battery-badge { width: 100%; flex-direction: row; justify-content: center; gap: 16px; }
+        }
+
+        @media (max-width: 480px) {
+            .battery-detail-grid { grid-template-columns: repeat(2, 1fr); }
+            .stats-row { grid-template-columns: repeat(2, 1fr); }
+            .sot-estimator { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Loading animation */
+        .loading-spinner {
+            display: inline-block; width: 20px; height: 20px;
+            border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--accent-purple);
+            border-radius: 50%; animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .hidden { display: none !important; }
+
+        /* Smooth number transition */
+        .smooth-number { transition: all 0.5s ease; }
+
+        /* Progress ring */
+        .progress-ring-container { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+        .progress-ring { transform: rotate(-90deg); }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.8s ease;
+            stroke-linecap: round;
+        }
+        .progress-ring-text {
+            position: absolute; font-size: 20px; font-weight: 900;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation">
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+        <div class="bg-orb"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-badge">
+                <span class="dot"></span>
+                Universal Battery Master Center
+            </div>
+            <h1>🔋 Battery <span>Master</span> Center</h1>
+            <p>Deteksi otomatis perangkat kamu — monitoring real-time, kalibrasi, dan optimasi baterai untuk SEMUA HP.</p>
+        </header>
+
+        <!-- Device Detection Banner -->
+        <div class="device-banner" id="deviceBanner">
+            <div class="device-icon" id="deviceIcon">📱</div>
+            <div class="device-info">
+                <div class="device-name" id="deviceName">Mendeteksi perangkat...</div>
+                <div class="device-specs" id="deviceSpecs">
+                    <span class="loading-spinner"></span> Membaca informasi perangkat...
+                </div>
+            </div>
+            <div class="device-battery-badge">
+                <div class="bat-val" id="deviceBatPercent">--%</div>
+                <div class="bat-label">Baterai Saat Ini</div>
+            </div>
+        </div>
+
+        <!-- Live Indicator -->
+        <div style="text-align:center;margin-bottom:16px;">
+            <span class="live-indicator" id="liveIndicator">
+                <span class="live-dot"></span>
+                LIVE MONITORING
+            </span>
+            <span id="apiStatus" style="font-size:10px;color:var(--text-muted);margin-left:8px;"></span>
+        </div>
+
+        <!-- Phone Info Bar -->
+        <div class="phone-info-bar" id="phoneInfoBar">
+            <div class="info-chip">
+                <span class="icon">📱</span>
+                <strong id="infoDevice">--</strong>
+            </div>
+            <div class="info-chip">
+                <span class="icon">⚡</span>
+                Baterai <strong id="infoBattery">--</strong>
+            </div>
+            <div class="info-chip">
+                <span class="icon">🔌</span>
+                Charge <strong id="infoCharger">--</strong>
+            </div>
+            <div class="info-chip">
+                <span class="icon">🖥️</span>
+                <strong id="infoOS">--</strong>
+            </div>
+            <div class="info-chip">
+                <span class="icon">🧪</span>
+                <strong id="infoBatType">--</strong>
+            </div>
+            <div class="info-chip">
+                <span class="icon">🌐</span>
+                <strong id="infoBrowser">--</strong>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs" id="navTabs">
+            <button class="nav-tab active" data-tab="monitor">
+                <span class="tab-icon">📊</span> Monitor
+            </button>
+            <button class="nav-tab" data-tab="perpersen">
+                <span class="tab-icon">📋</span> Per Persen
+            </button>
+            <button class="nav-tab" data-tab="kalibrasi">
+                <span class="tab-icon">🔧</span> Kalibrasi
+            </button>
+            <button class="nav-tab" data-tab="optimasi">
+                <span class="tab-icon">⚡</span> Optimasi
+            </button>
+            <button class="nav-tab" data-tab="suhu">
+                <span class="tab-icon">🌡️</span> Suhu
+            </button>
+            <button class="nav-tab" data-tab="mitos">
+                <span class="tab-icon">💡</span> Mitos
+            </button>
+            <button class="nav-tab" data-tab="sot">
+                <span class="tab-icon">⏱️</span> SOT
+            </button>
+            <button class="nav-tab" data-tab="history">
+                <span class="tab-icon">📜</span> Riwayat
+            </button>
+        </div>
+
+        <!-- TAB: MONITOR -->
+        <div class="tab-content active" id="tab-monitor">
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">📊</span>
+                    Battery Monitor Real-Time
+                </div>
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">Data langsung dari Battery API perangkat kamu. Geser slider untuk simulasi, atau biarkan mode LIVE untuk data real-time.</p>
+
+                <div style="text-align:center;margin-bottom:10px;">
+                    <button id="liveModeBtn" style="background:var(--accent-green);color:#000;border:none;padding:8px 20px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;">🔴 Mode LIVE Aktif</button>
+                    <button id="manualModeBtn" style="background:rgba(255,255,255,0.1);color:var(--text-secondary);border:1px solid var(--border-color);padding:8px 20px;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;margin-left:8px;">✋ Mode Manual</button>
+                </div>
+
+                <div class="battery-visualizer">
+                    <div class="battery-3d">
+                        <div class="battery-tip"></div>
+                        <div class="battery-body">
+                            <div class="battery-fill green" id="batteryFill" style="height: 50%;"></div>
+                            <div class="battery-percent-display" id="batteryPercentDisplay">50<span>%</span></div>
+                            <div class="charging-bolt" id="chargingBolt">⚡</div>
+                        </div>
+                    </div>
+
+                    <div class="battery-side-info" id="sideInfo">
+                        <div class="side-info-item">
+                            <div class="si-label">Status Charging</div>
+                            <div class="si-value" id="sideCharging">--</div>
+                            <div class="si-sub" id="sideChargingSub">--</div>
+                        </div>
+                        <div class="side-info-item">
+                            <div class="si-label">Waktu Penuh / Habis</div>
+                            <div class="si-value" id="sideTime">--</div>
+                            <div class="si-sub" id="sideTimeSub">--</div>
+                        </div>
+                        <div class="side-info-item">
+                            <div class="si-label">Voltase Estimasi</div>
+                            <div class="si-value" id="sideVoltage">--</div>
+                            <div class="si-sub">Berdasarkan level baterai</div>
+                        </div>
+                        <div class="side-info-item">
+                            <div class="si-label">Platform</div>
+                            <div class="si-value" id="sidePlatform" style="font-size:14px;">--</div>
+                            <div class="si-sub" id="sidePlatformSub">--</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="text-align:center;">
+                    <div class="battery-status-text" id="batteryStatusText" style="background:rgba(0,230,118,0.1);color:var(--accent-green);">
+                        Memuat data baterai...
+                    </div>
+                </div>
+
+                <div class="battery-slider-container" id="sliderContainer">
+                    <input type="range" min="0" max="100" value="50" class="battery-slider" id="batterySlider">
+                    <p style="text-align:center;font-size:10px;color:var(--text-muted);margin-top:6px;">Geser untuk simulasi (otomatis nonaktif saat mode LIVE)</p>
+                </div>
+
+                <div class="battery-detail-grid" id="batteryDetailGrid">
+                    <div class="battery-detail-item">
+                        <div class="label">Level Baterai</div>
+                        <div class="value smooth-number" id="detailLevel">--%</div>
+                        <div class="sub">real-time</div>
+                    </div>
+                    <div class="battery-detail-item">
+                        <div class="label">Voltase Estimasi</div>
+                        <div class="value" id="detailVoltage">--V</div>
+                        <div class="sub">3.3V - 4.4V range</div>
+                    </div>
+                    <div class="battery-detail-item">
+                        <div class="label">Sisa Kapasitas</div>
+                        <div class="value" id="detailCapacity">--mAh</div>
+                        <div class="sub" id="detailCapacitySub">estimasi</div>
+                    </div>
+                    <div class="battery-detail-item">
+                        <div class="label">Estimasi SOT</div>
+                        <div class="value" id="detailSOT">--</div>
+                        <div class="sub">penggunaan normal</div>
+                    </div>
+                    <div class="battery-detail-item">
+                        <div class="label">Status Charging</div>
+                        <div class="value" id="detailCharging">--</div>
+                        <div class="sub" id="detailChargingSub">--</div>
+                    </div>
+                    <div class="battery-detail-item">
+                        <div class="label">Rekomendasi</div>
+                        <div class="value" id="detailRecommend" style="font-size:13px;">--</div>
+                        <div class="sub" id="detailRecommendSub">--</div>
+                    </div>
+                </div>
+
+                <!-- Mini Chart -->
+                <div class="chart-container">
+                    <canvas class="chart-canvas" id="batteryChart"></canvas>
+                </div>
+                <p style="text-align:center;font-size:10px;color:var(--text-muted);margin-top:4px;">Grafik perubahan baterai real-time (setiap 10 detik)</p>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🚀</span>
+                    Aksi Cepat
+                </div>
+                <div class="quick-actions">
+                    <button class="quick-action-btn" onclick="switchTab('kalibrasi')">
+                        <div class="qa-icon">🔧</div>
+                        <div class="qa-label">Kalibrasi Baterai</div>
+                    </button>
+                    <button class="quick-action-btn" onclick="switchTab('optimasi')">
+                        <div class="qa-icon">⚡</div>
+                        <div class="qa-label">Optimasi Sistem</div>
+                    </button>
+                    <button class="quick-action-btn" onclick="switchTab('suhu')">
+                        <div class="qa-icon">🌡️</div>
+                        <div class="qa-label">Cek Suhu Aman</div>
+                    </button>
+                    <button class="quick-action-btn" onclick="switchTab('perpersen')">
+                        <div class="qa-icon">📋</div>
+                        <div class="qa-label">Tabel Per Persen</div>
+                    </button>
+                    <button class="quick-action-btn" onclick="switchTab('sot')">
+                        <div class="qa-icon">⏱️</div>
+                        <div class="qa-label">Estimasi SOT</div>
+                    </button>
+                    <button class="quick-action-btn" onclick="switchTab('mitos')">
+                        <div class="qa-icon">💡</div>
+                        <div class="qa-label">Mitos vs Fakta</div>
+                    </button>
+                    <button class="quick-action-btn" onclick="switchTab('history')">
+                        <div class="qa-icon">📜</div>
+                        <div class="qa-label">Riwayat Baterai</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-row" id="statsRow">
+                <div class="stat-card">
+                    <div class="stat-value" id="statLevel">--%</div>
+                    <div class="stat-label">Baterai Sekarang</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statCharging">--</div>
+                    <div class="stat-label">Status Charge</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statTime">--</div>
+                    <div class="stat-label">Waktu Penuh/Habis</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="statVoltage">--V</div>
+                    <div class="stat-label">Voltase Estimasi</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: PER PERSEN -->
+        <div class="tab-content" id="tab-perpersen">
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">📋</span>
+                    Analisis Baterai Per Persen (100% → 0%)
+                </div>
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">Data akurat berdasarkan karakteristik Li-Po/Li-Ion universal. Berlaku untuk SEMUA smartphone modern.</p>
+
+                <div class="alert-banner info">
+                    <span class="alert-icon">ℹ️</span>
+                    <span>Voltase baterai Li-Po normal: <strong>3.3V (0%)</strong> hingga <strong>4.4V (100%)</strong>. Kurva discharge tidak linear — penurunan tercepat di bawah 20%.</span>
+                </div>
+
+                <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+                    <div class="best-tag">🟢 Terbaik: 80-40% (Zona Stabil)</div>
+                    <div class="worst-tag">🔴 Terburuk: &lt;15% (Zona Kritis)</div>
+                </div>
+
+                <div class="table-container">
+                    <table class="percent-table">
+                        <thead>
+                            <tr>
+                                <th>Persen</th>
+                                <th>Voltase</th>
+                                <th>Status</th>
+                                <th>Kondisi</th>
+                                <th>Rating</th>
+                                <th>Rekomendasi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="percentTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🏆</span>
+                    Ringkasan: Zona Terbaik vs Terburuk
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div style="background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.15);border-radius:12px;padding:16px;">
+                        <h4 style="color:var(--accent-green);margin-bottom:10px;font-size:13px;">🟢 ZONA TERBAIK (80% - 40%)</h4>
+                        <ul style="list-style:none;font-size:11px;color:var(--text-secondary);line-height:1.9;">
+                            <li>✅ Voltase stabil (4.0V - 3.7V)</li>
+                            <li>✅ Performa CPU/GPU maksimal</li>
+                            <li>✅ Efisiensi daya tertinggi</li>
+                            <li>✅ Suhu baterai optimal</li>
+                            <li>✅ Degradasi kimia minimal</li>
+                            <li>✅ Gaming & multitasking lancar</li>
+                        </ul>
+                    </div>
+                    <div style="background:rgba(255,23,68,0.05);border:1px solid rgba(255,23,68,0.15);border-radius:12px;padding:16px;">
+                        <h4 style="color:var(--accent-red);margin-bottom:10px;font-size:13px;">🔴 ZONA TERBURUK (&lt;15%)</h4>
+                        <ul style="list-style:none;font-size:11px;color:var(--text-secondary);line-height:1.9;">
+                            <li>❌ Voltase drop cepat (&lt;3.5V)</li>
+                            <li>❌ CPU throttling otomatis</li>
+                            <li>❌ Layar redup otomatis</li>
+                            <li>❌ Risiko shutdown mendadak</li>
+                            <li>❌ Stres kimia baterai tinggi</li>
+                            <li>❌ Degradasi kapasitas dipercepat</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: KALIBRASI -->
+        <div class="tab-content" id="tab-kalibrasi">
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🔧</span>
+                    Panduan Kalibrasi Baterai Universal
+                </div>
+
+                <div class="alert-banner warning">
+                    <span class="alert-icon">⚠️</span>
+                    <span><strong>Penting:</strong> Kalibrasi hanya jika indikator TIDAK AKURAT (lompat drastis). Cukup 1x per 3-6 bulan. Berlaku untuk SEMUA smartphone Li-Po/Li-Ion.</span>
+                </div>
+
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Kalibrasi menyinkronkan <strong>Fuel Gauge IC</strong> dengan voltase aktual sel baterai. Ini memperbaiki <em>pembacaan persentase</em>, bukan memperbaiki baterai rusak.</p>
+
+                <div class="calibration-steps">
+                    <div class="calibration-step">
+                        <div class="step-number red">1</div>
+                        <div class="step-content">
+                            <h3>📱 Gunakan HP Sampai Mati Total</h3>
+                            <p>Pakai HP sampai baterai habis dan shutdown otomatis. Jangan dipaksa nyalakan lagi.</p>
+                            <div class="warning-box">
+                                <span>⚠️</span>
+                                <span>Jangan sering deep discharge! Ini hanya untuk kalibrasi, bukan kebiasaan harian.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="calibration-step">
+                        <div class="step-number orange">2</div>
+                        <div class="step-content">
+                            <h3>⏳ Diamkan 3-4 Jam</h3>
+                            <p>Setelah mati, diamkan HP minimal 3-4 jam. Voltase sel stabil, sisa muatan residual hilang, suhu kembali normal, BMS reset internal.</p>
+                        </div>
+                    </div>
+                    <div class="calibration-step">
+                        <div class="step-number green">3</div>
+                        <div class="step-content">
+                            <h3>🔌 Charge Dalam Keadaan MATI Sampai 100%</h3>
+                            <p>Gunakan charger original. Charge sampai 100% TANPA menyalakan HP.</p>
+                            <div class="info-box">
+                                <span>💡</span>
+                                <span>Setelah 100%, biarkan tercolok 1-2 jam lagi untuk cell balancing oleh BMS.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="calibration-step">
+                        <div class="step-number blue">4</div>
+                        <div class="step-content">
+                            <h3>✅ Verifikasi & Nyalakan</h3>
+                            <p>Nyalakan HP. Jika menunjukkan 100% → berhasil! Jika &lt;100%, charge lagi dalam keadaan mati.</p>
+                        </div>
+                    </div>
+                    <div class="calibration-step">
+                        <div class="step-number purple">5</div>
+                        <div class="step-content">
+                            <h3>🔄 Restart & Clear Stats</h3>
+                            <p>Restart HP. Untuk Android, bisa clear battery stats via ADB:</p>
+                            <div style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;margin-top:8px;font-family:monospace;font-size:11px;color:var(--accent-cyan);">
+                                adb shell dumpsys batterystats --reset<br>adb reboot
+                            </div>
+                            <div class="success-box">
+                                <span>✅</span>
+                                <span>Fuel Gauge IC sudah disinkronkan. Indikator baterai sekarang akurat!</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="calibration-step">
+                        <div class="step-number cyan">6</div>
+                        <div class="step-content">
+                            <h3>📊 Verifikasi 2-3 Hari</h3>
+                            <p>Monitor penurunan persentase. Harus lebih linear. Jika masih bermasalah, cek aplikasi background atau kemungkinan hardware issue.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">✅</span>
+                    Checklist Kalibrasi
+                </div>
+                <ul class="checklist">
+                    <li><span class="check-icon do">✓</span><span>HP dipakai sampai mati total (0%, shutdown otomatis)</span></li>
+                    <li><span class="check-icon do">✓</span><span>HP didiamkan dalam keadaan mati 3-4 jam</span></li>
+                    <li><span class="check-icon do">✓</span><span>Charger original digunakan (bukan charger abal-abal)</span></li>
+                    <li><span class="check-icon do">✓</span><span>Charging dalam keadaan MATI sampai 100%</span></li>
+                    <li><span class="check-icon do">✓</span><span>Extra 1-2 jam setelah 100% untuk cell balancing</span></li>
+                    <li><span class="check-icon do">✓</span><span>HP dinyalakan dan diverifikasi menunjukkan 100%</span></li>
+                    <li><span class="check-icon do">✓</span><span>Restart HP (opsional: clear batterystats via ADB)</span></li>
+                    <li><span class="check-icon do">✓</span><span>Monitor 2-3 hari untuk verifikasi hasil</span></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- TAB: OPTIMASI -->
+        <div class="tab-content" id="tab-optimasi">
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">⚡</span>
+                    Optimasi Universal untuk Baterai Awet
+                </div>
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Settingan berlaku untuk SEMUA smartphone Android/iOS. Setiap optimasi diberi label tingkat dampak.</p>
+
+                <div class="opt-grid">
+                    <div class="opt-card">
+                        <div class="opt-icon">🌙</div>
+                        <h3>Dark Mode Permanen</h3>
+                        <p>Layar AMOLED/OLED mematikan pixel hitam. Dark mode hemat <strong>15-25%</strong> daya layar. Gunakan wallpaper gelap juga.</p>
+                        <span class="opt-tag high">Dampak Tinggi</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">📱</div>
+                        <h3>Refresh Rate: Auto / 60Hz</h3>
+                        <p>Lock 120Hz/144Hz boroskan <strong>20-30%</strong> daya layar ekstra. Gunakan Auto atau 60Hz untuk hemat maksimal.</p>
+                        <span class="opt-tag high">Dampak Tinggi</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">🔕</div>
+                        <h3>Restrict Background Apps</h3>
+                        <p>Batasi aktivitas latar belakang app non-esensial. WA/Telegram tetap No Restrictions agar notifikasi masuk.</p>
+                        <span class="opt-tag high">Dampak Tinggi</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">📡</div>
+                        <h3>Kunci ke 4G/LTE (jika 5G tidak stabil)</h3>
+                        <p>Sinyal 5G tidak stabil = HP terus mencari sinyal = boros besar. Kunci ke 4G jika area 5G lemah.</p>
+                        <span class="opt-tag high">Dampak Tinggi</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">🖥️</div>
+                        <h3>Matikan / Jadwalkan AOD</h3>
+                        <p>Always On Display memakan <strong>~1% per jam</strong>. Set ke Tap to show atau schedule saja.</p>
+                        <span class="opt-tag medium">Dampak Medium</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">🔍</div>
+                        <h3>Matikan Wi-Fi/BT Scanning</h3>
+                        <p>Location > Wi-Fi scanning & Bluetooth scanning > OFF. Mencegah HP terus mencari jaringan di background.</p>
+                        <span class="opt-tag medium">Dampak Medium</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">🎮</div>
+                        <h3>Game Mode: Balanced</h3>
+                        <p>Gunakan Balanced Mode untuk gaming santai. Performance Mode hanya untuk kompetitif. Matikan auto-brightness saat gaming.</p>
+                        <span class="opt-tag medium">Dampak Medium</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">🔔</div>
+                        <h3>Kelola Notifikasi</h3>
+                        <p>Setiap notifikasi = layar nyala + CPU wake. Matikan notifikasi app tidak penting.</p>
+                        <span class="opt-tag medium">Dampak Medium</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">📍</div>
+                        <h3>GPS: Battery Saving</h3>
+                        <p>Gunakan Battery Saving mode untuk lokasi. High accuracy hanya saat butuh navigasi presisi.</p>
+                        <span class="opt-tag medium">Dampak Medium</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">🔄</div>
+                        <h3>Auto-Sync: Manual</h3>
+                        <p>Matikan auto-sync untuk akun tidak penting. Sync manual saat dibutuhkan saja.</p>
+                        <span class="opt-tag low">Dampak Rendah</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">🎨</div>
+                        <h3>Kurangi Animasi Sistem</h3>
+                        <p>Developer Options > Animation scale > 0.5x. Mengurangi beban GPU, HP terasa lebih responsif.</p>
+                        <span class="opt-tag low">Dampak Rendah</span>
+                    </div>
+                    <div class="opt-card">
+                        <div class="opt-icon">📊</div>
+                        <h3>Monitor Battery Usage</h3>
+                        <p>Settings > Battery > App usage. Cek app paling boros. Uninstall atau restrict yang mencurigakan.</p>
+                        <span class="opt-tag low">Dampak Rendah</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toggle Simulator -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">⚙️</span>
+                    Simulator Setting Rekomendasi
+                </div>
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px;">Toggle settingan yang direkomendasikan. Klik untuk melihat estimasi penghematan.</p>
+
+                <div id="toggleSettings">
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-title">🌙 Dark Mode</div>
+                            <div class="toggle-desc">Hemat 15-25% daya layar AMOLED/OLED</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" checked data-impact="20">
+                            <span class="toggle-slider-el"></span>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-title">📱 Refresh Rate Auto</div>
+                            <div class="toggle-desc">Hemat 20-30% vs lock 120Hz/144Hz</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" checked data-impact="25">
+                            <span class="toggle-slider-el"></span>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-title">🔕 Restrict Background Apps</div>
+                            <div class="toggle-desc">Hemat 10-15% dari wakelock</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" checked data-impact="12">
+                            <span class="toggle-slider-el"></span>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-title">📡 4G/LTE Only (jika 5G tidak stabil)</div>
+                            <div class="toggle-desc">Hemat 15-20% dari signal hunting</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" data-impact="18">
+                            <span class="toggle-slider-el"></span>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-title">🖥️ AOD Off / Scheduled</div>
+                            <div class="toggle-desc">Hemat ~1% per jam (~10-15% per hari)</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" checked data-impact="12">
+                            <span class="toggle-slider-el"></span>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-title">🔍 Wi-Fi/BT Scanning Off</div>
+                            <div class="toggle-desc">Hemat 3-5% dari background scanning</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" checked data-impact="4">
+                            <span class="toggle-slider-el"></span>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-title">📍 GPS Battery Saving</div>
+                            <div class="toggle-desc">Hemat 5-8% dari GPS polling</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" checked data-impact="6">
+                            <span class="toggle-slider-el"></span>
+                        </div>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <div class="toggle-title">🔄 Auto-Sync Off</div>
+                            <div class="toggle-desc">Hemat 3-5% dari background sync</div>
+                        </div>
+                        <div class="toggle-switch">
+                            <input type="checkbox" data-impact="4">
+                            <span class="toggle-slider-el"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:18px;padding:14px;background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.15);border-radius:12px;text-align:center;">
+                    <div style="font-size:11px;color:var(--text-muted);margin-bottom:3px;">Estimasi Penghematan Total</div>
+                    <div style="font-size:30px;font-weight:900;color:var(--accent-green);" id="totalSavings">~60%</div>
+                    <div style="font-size:10px;color:var(--text-muted);">penghematan daya vs setting default</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SUHU -->
+        <div class="tab-content" id="tab-suhu">
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">🌡️</span>
+                    Panduan Suhu Baterai Universal
+                </div>
+                <div class="alert-banner warning">
+                    <span class="alert-icon">🔥</span>
+                    <span><strong>Suhu adalah musuh #1 baterai!</strong> Baterai Li-Po yang sering &gt;40°C akan degradasi 2-3x lebih cepat.</span>
+                </div>
+
+                <div class="temp-zones">
+                    <div class="temp-zone cold">
+                        <div class="temp-icon">🥶</div>
+                        <div class="temp-range" style="color:var(--accent-cyan);">&lt; 10°C</div>
+                        <div class="temp-label" style="color:var(--accent-cyan);">Terlalu Dingin</div>
+                        <div class="temp-desc">Resistensi internal naik. Kapasitas sementara turun. Hindari charge di &lt;0°C.</div>
+                    </div>
+                    <div class="temp-zone optimal">
+                        <div class="temp-icon">😊</div>
+                        <div class="temp-range" style="color:var(--accent-green);">20°C - 35°C</div>
+                        <div class="temp-label" style="color:var(--accent-green);">ZONA OPTIMAL</div>
+                        <div class="temp-desc">Suhu ideal penggunaan & charging. Efisiensi maksimal. Degradasi minimal.</div>
+                    </div>
+                    <div class="temp-zone warm">
+                        <div class="temp-icon">😐</div>
+                        <div class="temp-range" style="color:var(--accent-yellow);">35°C - 40°C</div>
+                        <div class="temp-label" style="color:var(--accent-yellow);">Hangat (Waspada)</div>
+                        <div class="temp-desc">Normal saat gaming berat / fast charging. Masih aman tapi jangan berkepanjangan.</div>
+                    </div>
+                    <div class="temp-zone hot">
+                        <div class="temp-icon">😰</div>
+                        <div class="temp-range" style="color:var(--accent-orange);">40°C - 45°C</div>
+                        <div class="temp-label" style="color:var(--accent-orange);">Panas (Bahaya)</div>
+                        <div class="temp-desc">Thermal throttling aktif. Degradasi dipercepat. Hentikan penggunaan berat!</div>
+                    </div>
+                    <div class="temp-zone danger">
+                        <div class="temp-icon">🚨</div>
+                        <div class="temp-range" style="color:var(--accent-red);">&gt; 45°C</div>
+                        <div class="temp-label" style="color:var(--accent-red);">BAHAYA!</div>
+                        <div class="temp-desc">Risiko kerusakan permanen. HP mungkin auto-shutdown. Segera dinginkan!</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">❄️</span>
+                    Cara Mencegah HP Panas
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div>
+                        <h4 style="color:var(--accent-green);font-size:13px;margin-bottom:10px;">✅ YANG HARUS DILAKUKAN</h4>
+                        <ul class="checklist">
+                            <li><span class="check-icon do">✓</span><span>Lepas case saat fast charging</span></li>
+                            <li><span class="check-icon do">✓</span><span>Charge di ruangan sejuk</span></li>
+                            <li><span class="check-icon do">✓</span><span>Istirahatkan HP 5-10 menit setelah gaming 1 jam</span></li>
+                            <li><span class="check-icon do">✓</span><span>Gunakan charger original</span></li>
+                            <li><span class="check-icon do">✓</span><span>Jangan tutup ventilasi saat gaming</span></li>
+                            <li><span class="check-icon do">✓</span><span>Tutup app background sebelum gaming</span></li>
+                            <li><span class="check-icon do">✓</span><span>Gunakan phone cooler jika gaming lama</span></li>
+                            <li><span class="check-icon do">✓</span><span>Charge saat 20-30%, jangan tunggu 0%</span></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 style="color:var(--accent-red);font-size:13px;margin-bottom:10px;">❌ YANG HARUS DIHINDARI</h4>
+                        <ul class="checklist">
+                            <li><span class="check-icon dont">✕</span><span>Charge sambil gaming berat</span></li>
+                            <li><span class="check-icon dont">✕</span><span>Charge di bawah bantal/kasur</span></li>
+                            <li><span class="check-icon dont">✕</span><span>HP di dashboard mobil kena matahari</span></li>
+                            <li><span class="check-icon dont">✕</span><span>Gunakan charger murah/tidak bersertifikat</span></li>
+                            <li><span class="check-icon dont">✕</span><span>Charge dengan case tebal menahan panas</span></li>
+                            <li><span class="check-icon dont">✕</span><span>Streaming + charge bersamaan lama</span></li>
+                            <li><span class="check-icon dont">✕</span><span>Memasukkan HP ke kulkas (kondensasi!)</span></li>
+                            <li><span class="check-icon dont">✕</span><span>Update OS saat baterai &lt;20%</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: MITOS -->
+        <div class="tab-content" id="tab-mitos">
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">💡</span>
+                    Mitos vs Fakta Baterai
+                </div>
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px;">Banyak mitos baterai ketinggalan zaman. Berikut fakta sebenarnya berdasarkan ilmu kimia Li-Po/Li-Ion.</p>
+
+                <div class="myth-fact-grid">
+                    <div class="myth-box"><div class="mf-label">❌ Mitos</div><p>"Charge pertama harus 8-12 jam"</p></div>
+                    <div class="fact-box"><div class="mf-label">✅ Fakta</div><p>Li-Po modern TIDAK perlu charge panjang. BMS sudah kalibrasi dari pabrik. Charge sampai 100% cukup.</p></div>
+                    <div class="myth-box"><div class="mf-label">❌ Mitos</div><p>"Harus habiskan sampai 0% sebelum charge"</p></div>
+                    <div class="fact-box"><div class="mf-label">✅ Fakta</div><p>Deep discharge justru MERUSAK Li-Po. Charge di 20-30% ideal. Full discharge hanya untuk kalibrasi.</p></div>
+                    <div class="myth-box"><div class="mf-label">❌ Mitos</div><p>"Charge semalaman merusak baterai"</p></div>
+                    <div class="fact-box"><div class="mf-label">✅ Fakta</div><p>BMS modern stop charging saat 100%. Tapi menjaga di 100% berjam-jam memberi stres voltase. Lebih baik 20-80%.</p></div>
+                    <div class="myth-box"><div class="mf-label">❌ Mitos</div><p>"Menutup app di recent menghemat baterai"</p></div>
+                    <div class="fact-box"><div class="mf-label">✅ Fakta</div><p>OS modern sudah manage background. Force close justru boros karena app reload dari nol. Gunakan "Restrict background".</p></div>
+                    <div class="myth-box"><div class="mf-label">❌ Mitos</div><p>"Fast charging merusak baterai"</p></div>
+                    <div class="fact-box"><div class="mf-label">✅ Fakta</div><p>Fast charging aman dengan charger original & suhu terjaga. Yang merusak adalah PANAS, bukan watt tinggi.</p></div>
+                    <div class="myth-box"><div class="mf-label">❌ Mitos</div><p>"Kalibrasi harus setiap bulan"</p></div>
+                    <div class="fact-box"><div class="mf-label">✅ Fakta</div><p>Kalibrasi hanya 1x per 3-6 bulan. Terlalu sering deep discharge justru mempercepat degradasi.</p></div>
+                    <div class="myth-box"><div class="mf-label">❌ Mitos</div><p>"HP di kulkas bisa mendinginkan baterai"</p></div>
+                    <div class="fact-box"><div class="mf-label">✅ Fakta</div><p>JANGAN! Kondensasi bisa menyebabkan korsleting. Dinginkan di suhu ruangan dengan kipas biasa.</p></div>
+                    <div class="myth-box"><div class="mf-label">❌ Mitos</div><p>"Battery saver memperlambat HP permanen"</p></div>
+                    <div class="fact-box"><div class="mf-label">✅ Fakta</div><p>Battery saver hanya batasi clock speed sementara. Saat dimatikan, performa kembali 100%. Tidak ada efek permanen.</p></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: SOT -->
+        <div class="tab-content" id="tab-sot">
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">⏱️</span>
+                    SOT (Screen-On Time) Estimator
+                </div>
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">Estimasi berdasarkan kapasitas baterai terdeteksi dan aktivitas. Angka disesuaikan dengan device kamu.</p>
+
+                <div class="alert-banner info">
+                    <span class="alert-icon">📊</span>
+                    <span>SOT = total waktu layar menyala dari 100% sampai 0%. Estimasi berdasarkan rata-rata — hasil aktual bervariasi.</span>
+                </div>
+
+                <div class="sot-estimator" id="sotEstimator">
+                    <div class="sot-item">
+                        <div class="sot-icon">📖</div>
+                        <div class="sot-activity">Membaca / Browsing Ringan</div>
+                        <div class="sot-hours" style="color:var(--accent-green);" id="sotReading">--</div>
+                        <div class="sot-unit">jam SOT</div>
+                    </div>
+                    <div class="sot-item">
+                        <div class="sot-icon">💬</div>
+                        <div class="sot-activity">Chatting & Sosmed</div>
+                        <div class="sot-hours" style="color:var(--accent-green);" id="sotChatting">--</div>
+                        <div class="sot-unit">jam SOT</div>
+                    </div>
+                    <div class="sot-item">
+                        <div class="sot-icon">🎬</div>
+                        <div class="sot-activity">Streaming Video</div>
+                        <div class="sot-hours" style="color:var(--accent-yellow);" id="sotStreaming">--</div>
+                        <div class="sot-unit">jam SOT</div>
+                    </div>
+                    <div class="sot-item">
+                        <div class="sot-icon">🎮</div>
+                        <div class="sot-activity">Gaming Ringan (MLBB)</div>
+                        <div class="sot-hours" style="color:var(--accent-orange);" id="sotGaming">--</div>
+                        <div class="sot-unit">jam SOT</div>
+                    </div>
+                    <div class="sot-item">
+                        <div class="sot-icon">🎮</div>
+                        <div class="sot-activity">Gaming Berat (Genshin)</div>
+                        <div class="sot-hours" style="color:var(--accent-red);" id="sotHeavyGaming">--</div>
+                        <div class="sot-unit">jam SOT</div>
+                    </div>
+                    <div class="sot-item">
+                        <div class="sot-icon">📸</div>
+                        <div class="sot-activity">Kamera / Recording</div>
+                        <div class="sot-hours" style="color:var(--accent-orange);" id="sotCamera">--</div>
+                        <div class="sot-unit">jam SOT</div>
+                    </div>
+                    <div class="sot-item">
+                        <div class="sot-icon">🎵</div>
+                        <div class="sot-activity">Musik (layar mati)</div>
+                        <div class="sot-hours" style="color:var(--accent-green);" id="sotMusic">--</div>
+                        <div class="sot-unit">jam playback</div>
+                    </div>
+                    <div class="sot-item">
+                        <div class="sot-icon">🌐</div>
+                        <div class="sot-activity">Standby (idle)</div>
+                        <div class="sot-hours" style="color:var(--accent-cyan);" id="sotStandby">--</div>
+                        <div class="sot-unit">jam standby</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Drain Rate -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">📉</span>
+                    Drain Rate Per Jam (% Terpakai)
+                </div>
+                <div id="drainRateBars"></div>
+            </div>
+
+            <!-- Charging Speed -->
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">⚡</span>
+                    Estimasi Waktu Charging
+                </div>
+                <div id="chargingBars"></div>
+                <div class="alert-banner info" style="margin-top:14px;">
+                    <span class="alert-icon">💡</span>
+                    <span>Charging paling cepat di 0-50% (constant current). Setelah 80%, kecepatan turun drastis (trickle charge) untuk melindungi baterai.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: RIWAYAT -->
+        <div class="tab-content" id="tab-history">
+            <div class="card">
+                <div class="card-title">
+                    <span class="emoji">📜</span>
+                    Riwayat Baterai Real-Time
+                </div>
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Log otomatis perubahan baterai setiap 30 detik. Data disimpan di sessionStorage (hilang saat tab ditutup).</p>
+
+                <div class="alert-banner info">
+                    <span class="alert-icon">📊</span>
+                    <span>Riwayat mulai tercatat saat halaman ini dibuka. Biarkan halaman terbuka untuk monitoring berkelanjutan.</span>
+                </div>
+
+                <div id="historyStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="histMax" style="color:var(--accent-green);">--%</div>
+                        <div class="stat-label">Tertinggi</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="histMin" style="color:var(--accent-red);">--%</div>
+                        <div class="stat-label">Terendah</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="histAvg" style="color:var(--accent-blue);">--%</div>
+                        <div class="stat-label">Rata-rata</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="histCount">0</div>
+                        <div class="stat-label">Total Log</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="histDrain" style="color:var(--accent-orange);">--</div>
+                        <div class="stat-label">Drain Rate/jam</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="histDuration">--</div>
+                        <div class="stat-label">Durasi Monitor</div>
+                    </div>
+                </div>
+
+                <div class="chart-container" style="height:150px;">
+                    <canvas class="chart-canvas" id="historyChart"></canvas>
+                </div>
+
+                <div class="history-log" id="historyLog">
+                    <p style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px;">Menunggu data baterai pertama...</p>
+                </div>
+
+                <div style="text-align:center;margin-top:12px;">
+                    <button onclick="clearHistory()" style="background:rgba(255,23,68,0.15);color:var(--accent-red);border:1px solid rgba(255,23,68,0.3);padding:8px 20px;border-radius:8px;font-weight:600;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;">🗑️ Hapus Riwayat</button>
+                    <button onclick="exportHistory()" style="background:rgba(68,138,255,0.15);color:var(--accent-blue);border:1px solid rgba(68,138,255,0.3);padding:8px 20px;border-radius:8px;font-weight:600;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;margin-left:8px;">📥 Export CSV</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>🔋 Battery Master Center — Universal Device Support</p>
+            <p style="margin-top:4px;">Mendeteksi otomatis & monitoring real-time via Battery API</p>
+            <p style="margin-top:6px;color:var(--accent-purple);">Data akurat berdasarkan spesifikasi terdeteksi dari perangkat kamu</p>
+        </footer>
+    </div>
+
+    <script>
+        // ============================================
+        // DEVICE DETECTION ENGINE
+        // ============================================
+        const DeviceDetector = {
+            detect() {
+                const ua = navigator.userAgent;
+                const platform = navigator.platform || navigator.userAgentData?.platform || '';
+                const result = {
+                    brand: 'Unknown',
+                    model: 'Unknown',
+                    os: 'Unknown',
+                    osVersion: '',
+                    browser: 'Unknown',
+                    browserVersion: '',
+                    deviceType: 'Desktop',
+                    isMobile: false,
+                    isTablet: false,
+                    estimatedBattery: 4000,
+                    estimatedCharger: 18,
+                    batteryType: 'Li-Po',
+                    screenType: 'LCD',
+                    cpu: 'Unknown'
+                };
+
+                // Detect OS
+                if (/Android/.test(ua)) {
+                    result.os = 'Android';
+                    const androidMatch = ua.match(/Android\s([\d.]+)/);
+                    result.osVersion = androidMatch ? androidMatch[1] : '';
+                    result.deviceType = /Mobile/.test(ua) ? 'Smartphone' : 'Tablet';
+                    result.isMobile = true;
+                    result.isTablet = !/Mobile/.test(ua);
+                } else if (/iPhone/.test(ua)) {
+                    result.os = 'iOS';
+                    result.deviceType = 'iPhone';
+                    result.isMobile = true;
+                    const iosMatch = ua.match(/OS\s([\d_]+)/);
+                    result.osVersion = iosMatch ? iosMatch[1].replace(/_/g, '.') : '';
+                } else if (/iPad/.test(ua)) {
+                    result.os = 'iPadOS';
+                    result.deviceType = 'iPad';
+                    result.isTablet = true;
+                } else if (/Windows/.test(ua)) {
+                    result.os = 'Windows';
+                    const winMatch = ua.match(/Windows NT\s([\d.]+)/);
+                    result.osVersion = winMatch ? winMatch[1] : '';
+                } else if (/Mac OS X/.test(ua)) {
+                    result.os = 'macOS';
+                    result.deviceType = 'Mac';
+                } else if (/Linux/.test(ua)) {
+                    result.os = 'Linux';
+                } else if (/CrOS/.test(ua)) {
+                    result.os = 'Chrome OS';
+                }
+
+                // Detect Browser
+                if (/Edg[e\/]/.test(ua)) {
+                    result.browser = 'Edge';
+                    const m = ua.match(/Edg[e\/]([\d.]+)/);
+                    result.browserVersion = m ? m[1] : '';
+                } else if (/Chrome\/([\d.]+)/.test(ua) && !/Edg/.test(ua)) {
+                    result.browser = 'Chrome';
+                    const m = ua.match(/Chrome\/([\d.]+)/);
+                    result.browserVersion = m ? m[1] : '';
+                } else if (/Firefox\/([\d.]+)/.test(ua)) {
+                    result.browser = 'Firefox';
+                    const m = ua.match(/Firefox\/([\d.]+)/);
+                    result.browserVersion = m ? m[1] : '';
+                } else if (/Safari\/([\d.]+)/.test(ua) && !/Chrome/.test(ua)) {
+                    result.browser = 'Safari';
+                    const m = ua.match(/Version\/([\d.]+)/);
+                    result.browserVersion = m ? m[1] : '';
+                } else if (/Opera|OPR/.test(ua)) {
+                    result.browser = 'Opera';
+                } else if (/SamsungBrowser/.test(ua)) {
+                    result.browser = 'Samsung Internet';
+                }
+
+                // Detect Device Brand & Model from Android UA
+                if (/Android/.test(ua)) {
+                    // Extract brand and model
+                    const modelMatch = ua.match(/;\s*([^;)]+)\s*Build/);
+                    if (modelMatch) {
+                        const fullModel = modelMatch[1].trim();
+                        const parts = fullModel.split(/\s+/);
+
+                        // Brand detection
+                        if (/SM-|Galaxy|Samsung/i.test(fullModel)) {
+                            result.brand = 'Samsung';
+                            result.model = fullModel;
+                        } else if (/Redmi|POCO|Poco|Xiaomi|Mi\s/i.test(fullModel)) {
+                            result.brand = /POCO|Poco/.test(fullModel) ? 'POCO' : 'Xiaomi';
+                            result.model = fullModel;
+                        } else if (/OPPO|OPPO/i.test(fullModel)) {
+                            result.brand = 'OPPO';
+                            result.model = fullModel;
+                        } else if (/vivo|VIVO/i.test(fullModel)) {
+                            result.brand = 'Vivo';
+                            result.model = fullModel;
+                        } else if (/realme|Realme/i.test(fullModel)) {
+                            result.brand = 'Realme';
+                            result.model = fullModel;
+                        } else if (/HUAWEI|Huawei/i.test(fullModel)) {
+                            result.brand = 'Huawei';
+                            result.model = fullModel;
+                        } else if (/Honor|honor/i.test(fullModel)) {
+                            result.brand = 'Honor';
+                            result.model = fullModel;
+                        } else if (/OnePlus|oneplus/i.test(fullModel)) {
+                            result.brand = 'OnePlus';
+                            result.model = fullModel;
+                        } else if (/Pixel|google/i.test(fullModel)) {
+                            result.brand = 'Google';
+                            result.model = fullModel;
+                        } else if (/Sony|Xperia/i.test(fullModel)) {
+                            result.brand = 'Sony';
+                            result.model = fullModel;
+                        } else if (/ASUS|Zenfone|ROG/i.test(fullModel)) {
+                            result.brand = 'ASUS';
+                            result.model = fullModel;
+                        } else if (/Lenovo|Motorola|Moto/i.test(fullModel)) {
+                            result.brand = /Motorola|Moto/.test(fullModel) ? 'Motorola' : 'Lenovo';
+                            result.model = fullModel;
+                        } else if (/Nokia/i.test(fullModel)) {
+                            result.brand = 'Nokia';
+                            result.model = fullModel;
+                        } else if (/Infinix/i.test(fullModel)) {
+                            result.brand = 'Infinix';
+                            result.model = fullModel;
+                        } else if (/TECNO/i.test(fullModel)) {
+                            result.brand = 'Tecno';
+                            result.model = fullModel;
+                        } else if (/itel/i.test(fullModel)) {
+                            result.brand = 'Itel';
+                            result.model = fullModel;
+                        } else {
+                            result.brand = parts[0] || 'Android';
+                            result.model = fullModel;
+                        }
+                    } else {
+                        // Try alternative pattern
+                        const altMatch = ua.match(/\(([^)]+)\)/);
+                        if (altMatch) {
+                            result.model = altMatch[1].substring(0, 50);
+                        }
+                    }
+                }
+
+                // iPhone model detection
+                if (/iPhone/.test(ua)) {
+                    result.brand = 'Apple';
+                    // Can't get exact model from UA, but can estimate
+                    if (/iPhone OS 17/.test(ua) || /iPhone OS 18/.test(ua)) {
+                        result.model = 'iPhone (iOS ' + result.osVersion + ')';
+                    } else {
+                        result.model = 'iPhone';
+                    }
+                }
+
+                if (/iPad/.test(ua)) {
+                    result.brand = 'Apple';
+                    result.model = 'iPad';
+                }
+
+                // Estimate battery capacity based on device
+                result.estimatedBattery = this.estimateBattery(result);
+                result.estimatedCharger = this.estimateCharger(result);
+                result.screenType = this.estimateScreen(result);
+                result.batteryType = 'Li-Po';
+
+                return result;
+            },
+
+            estimateBattery(device) {
+                const brand = device.brand.toLowerCase();
+                const model = device.model.toUpperCase();
+
+                // Specific model matching
+                const batteryDB = {
+                    // POCO
+                    'POCO X7 PRO': 5500, 'POCO X6 PRO': 5000, 'POCO X6': 5000,
+                    'POCO X5 PRO': 5000, 'POCO X5': 5000, 'POCO F6 PRO': 5000,
+                    'POCO F6': 5000, 'POCO F5 PRO': 5000, 'POCO F5': 5000,
+                    'POCO M6 PRO': 5000, 'POCO M6': 5000, 'POCO C65': 5000,
+                    'POCO C75': 5000, 'POCO X4 PRO': 5000, 'POCO X4 GT': 5080,
+                    'POCO F4 GT': 4700, 'POCO F4': 5000, 'POCO M5': 5000,
+                    'POCO M5S': 5000, 'POCO C55': 5000, 'POCO C40': 6000,
+
+                    // XIAOMI
+                    'REDMI NOTE 13 PRO': 5100, 'REDMI NOTE 13': 5000,
+                    'REDMI NOTE 12 PRO': 5000, 'REDMI NOTE 12': 5000,
+                    'XIAOMI 14': 4610, 'XIAOMI 14 PRO': 4880, 'XIAOMI 14 ULTRA': 5000,
+                    'XIAOMI 13': 4500, 'XIAOMI 13 PRO': 4820,
+                    'REDMI 13C': 5000, 'REDMI 12': 5000, 'REDMI A3': 5000,
+
+                    // SAMSUNG
+                    'SM-S928': 5000, 'SM-S926': 4900, 'SM-S921': 4000, // S24 series
+                    'SM-S918': 5000, 'SM-S916': 4700, 'SM-S911': 3900, // S23 series
+                    'SM-S908': 5000, 'SM-S906': 4500, 'SM-S901': 3700, // S22 series
+                    'SM-A556': 5000, 'SM-A546': 5000, 'SM-A346': 5000, // A series
+                    'SM-A156': 5000, 'SM-A256': 5000, 'SM-A056': 5000,
+                    'SM-M': 6000, // M series usually 6000
+
+                    // OPPO
+                    'OPPO RENO 11': 5000, 'OPPO RENO 10': 5000,
+                    'OPPO A79': 5000, 'OPPO A58': 5000, 'OPPO A38': 5000,
+                    'OPPO FIND X7': 5000, 'OPPO FIND X6': 5000,
+
+                    // VIVO
+                    'VIVO V30': 5000, 'VIVO V29': 4600, 'VIVO Y200': 5000,
+                    'VIVO Y100': 5000, 'VIVO X100': 5000,
+
+                    // REALME
+                    'REALME GT 5': 5240, 'REALME 12 PRO': 5000,
+                    'REALME C67': 5000, 'REALME C55': 5000,
+
+                    // IPHONE
+                    'IPHONE 16 PRO MAX': 4685, 'IPHONE 16 PRO': 3582,
+                    'IPHONE 16 PLUS': 4674, 'IPHONE 16': 3561,
+                    'IPHONE 15 PRO MAX': 4422, 'IPHONE 15 PRO': 3274,
+                    'IPHONE 15 PLUS': 4383, 'IPHONE 15': 3349,
+                    'IPHONE 14 PRO MAX': 4323, 'IPHONE 14 PRO': 3200,
+                    'IPHONE 14 PLUS': 4325, 'IPHONE 14': 3279,
+                    'IPHONE 13 PRO MAX': 4352, 'IPHONE 13 PRO': 3095,
+                    'IPHONE 13': 3227, 'IPHONE 13 MINI': 2406,
+                    'IPHONE 12 PRO MAX': 3687, 'IPHONE 12': 2815,
+                    'IPHONE 11 PRO MAX': 3969, 'IPHONE 11': 3110,
+                    'IPHONE SE 2022': 2018, 'IPHONE SE 2020': 1821,
+
+                    // ONEPLUS
+                    'ONEPLUS 12': 5400, 'ONEPLUS 12R': 5500,
+                    'ONEPLUS 11': 5000, 'ONEPLUS NORD': 4500,
+
+                    // GOOGLE
+                    'PIXEL 9 PRO XL': 5060, 'PIXEL 9 PRO': 4720,
+                    'PIXEL 9': 4700, 'PIXEL 8 PRO': 5050,
+                    'PIXEL 8': 4575, 'PIXEL 7 PRO': 5000,
+                    'PIXEL 7': 4355, 'PIXEL 7A': 4385,
+                    'PIXEL 6 PRO': 5003, 'PIXEL 6': 4614,
+                };
+
+                // Check specific model
+                for (const [key, val] of Object.entries(batteryDB)) {
+                    if (model.includes(key) || model.replace(/\s/g, '').includes(key.replace(/\s/g, ''))) {
+                        return val;
+                    }
+                }
+
+                // Fallback estimates by brand
+                if (device.isTablet) return 7000;
+                if (brand.includes('samsung')) {
+                    if (model.includes('M')) return 6000;
+                    if (model.includes('S24 ULTRA') || model.includes('S928')) return 5000;
+                    if (model.includes('S23 ULTRA') || model.includes('S918')) return 5000;
+                    return 4500;
+                }
+                if (brand.includes('xiaomi') || brand.includes('poco') || brand.includes('redmi')) return 5000;
+                if (brand.includes('oppo')) return 4800;
+                if (brand.includes('vivo')) return 4800;
+                if (brand.includes('realme')) return 5000;
+                if (brand.includes('apple')) {
+                    if (device.isTablet) return 7500;
+                    return 3500; // iPhone average
+                }
+                if (brand.includes('oneplus')) return 5000;
+                if (brand.includes('google')) return 4700;
+                if (brand.includes('huawei')) return 4500;
+                if (brand.includes('honor')) return 4800;
+                if (brand.includes('asus')) return 5000;
+                if (brand.includes('infinix')) return 5000;
+                if (brand.includes('tecno')) return 5000;
+                if (brand.includes('nokia')) return 4500;
+                if (brand.includes('motorola')) return 5000;
+                if (brand.includes('sony')) return 4500;
+
+                // Generic fallback
+                if (device.isMobile) return 4500;
+                if (device.isTablet) return 7000;
+                return 50000; // Laptop/Desktop estimate in mWh
+            },
+
+            estimateCharger(device) {
+                const brand = device.brand.toLowerCase();
+                const model = device.model.toUpperCase();
+
+                if (brand.includes('poco')) {
+                    if (model.includes('X7 PRO') || model.includes('F6 PRO')) return 120;
+                    if (model.includes('X6 PRO') || model.includes('X6') || model.includes('F6')) return 67;
+                    if (model.includes('X5') || model.includes('M6') || model.includes('C')) return 33;
+                    return 67;
+                }
+                if (brand.includes('xiaomi') || brand.includes('redmi')) {
+                    if (model.includes('14 ULTRA') || model.includes('14 PRO')) return 120;
+                    if (model.includes('14') || model.includes('13 PRO')) return 90;
+                    if (model.includes('NOTE 13 PRO')) return 67;
+                    return 33;
+                }
+                if (brand.includes('samsung')) {
+                    if (model.includes('S24 ULTRA') || model.includes('S928')) return 45;
+                    if (model.includes('S24') || model.includes('S23')) return 25;
+                    if (model.includes('A5') || model.includes('A3')) return 25;
+                    return 15;
+                }
+                if (brand.includes('oppo')) {
+                    if (model.includes('FIND X7')) return 100;
+                    if (model.includes('RENO 11')) return 67;
+                    return 33;
+                }
+                if (brand.includes('vivo')) {
+                    if (model.includes('X100')) return 80;
+                    if (model.includes('V30')) return 66;
+                    return 33;
+                }
+                if (brand.includes('realme')) {
+                    if (model.includes('GT')) return 150;
+                    return 33;
+                }
+                if (brand.includes('oneplus')) {
+                    if (model.includes('12')) return 100;
+                    return 80;
+                }
+                if (brand.includes('apple')) {
+                    if (device.isTablet) return 20;
+                    if (model.includes('PRO MAX') || model.includes('PLUS')) return 27;
+                    return 20;
+                }
+                if (brand.includes('google')) return 30;
+                if (brand.includes('infinix')) return 33;
+                if (brand.includes('tecno')) return 33;
+
+                return device.isMobile ? 18 : 65;
+            },
+
+            estimateScreen(device) {
+                const brand = device.brand.toLowerCase();
+                const model = device.model.toUpperCase();
+
+                if (brand.includes('apple') && !device.isTablet) return 'OLED (Super Retina)';
+                if (brand.includes('samsung')) {
+                    if (model.includes('S2') || model.includes('S9') || model.includes('A5') || model.includes('A3')) return 'AMOLED';
+                    return 'AMOLED/LCD';
+                }
+                if (brand.includes('poco')) {
+                    if (model.includes('X7') || model.includes('X6') || model.includes('F6') || model.includes('F5')) return 'AMOLED';
+                    return 'AMOLED/IPS LCD';
+                }
+                if (brand.includes('xiaomi')) {
+                    if (model.includes('14') || model.includes('13')) return 'AMOLED';
+                    return 'AMOLED/IPS LCD';
+                }
+                if (brand.includes('oppo')) return 'AMOLED';
+                if (brand.includes('vivo')) return 'AMOLED';
+                if (brand.includes('realme')) return 'AMOLED';
+                if (brand.includes('oneplus')) return 'AMOLED';
+                if (brand.includes('google')) return 'OLED';
+                if (brand.includes('sony')) return 'OLED';
+                if (brand.includes('huawei')) return 'OLED';
+
+                return device.isMobile ? 'AMOLED/LCD' : 'LCD';
+            }
+        };
+
+        // ============================================
+        // BATTERY DATA ENGINE
+        // ============================================
+        const BatteryEngine = {
+            battery: null,
+            isLive: true,
+            currentLevel: 50,
+            isCharging: false,
+            chargingTime: Infinity,
+            dischargingTime: Infinity,
+            historyData: [],
+            startTime: Date.now(),
+            chartData: [],
+            updateInterval: null,
+            chartInterval: null,
+
+            async init() {
+                try {
+                    if ('getBattery' in navigator) {
+                        this.battery = await navigator.getBattery();
+                        document.getElementById('apiStatus').textContent = '✅ Battery API tersedia';
+                        document.getElementById('liveIndicator').style.display = 'inline-flex';
+
+                        this.updateFromAPI();
+                        this.setupListeners();
+                        this.startMonitoring();
+                    } else {
+                        document.getElementById('apiStatus').textContent = '⚠️ Battery API tidak tersedia — gunakan mode manual';
+                        document.getElementById('liveIndicator').style.display = 'none';
+                        this.isLive = false;
+                        document.getElementById('liveModeBtn').style.display = 'none';
+                        this.currentLevel = 50;
+                        updateAllDisplays(50, false, Infinity, Infinity);
+                    }
+                } catch (e) {
+                    console.log('Battery API error:', e);
+                    document.getElementById('apiStatus').textContent = '⚠️ Battery API error — mode manual';
+                    document.getElementById('liveIndicator').style.display = 'none';
+                    this.isLive = false;
+                    document.getElementById('liveModeBtn').style.display = 'none';
+                    updateAllDisplays(50, false, Infinity, Infinity);
+                }
+            },
+
+            updateFromAPI() {
+                if (!this.battery) return;
+                this.currentLevel = Math.round(this.battery.level * 100);
+                this.isCharging = this.battery.charging;
+                this.chargingTime = this.battery.chargingTime;
+                this.dischargingTime = this.battery.dischargingTime;
+                updateAllDisplays(this.currentLevel, this.isCharging, this.chargingTime, this.dischargingTime);
+            },
+
+            setupListeners() {
+                if (!this.battery) return;
+                this.battery.addEventListener('chargingchange', () => this.updateFromAPI());
+                this.battery.addEventListener('levelchange', () => this.updateFromAPI());
+                this.battery.addEventListener('chargingtimechange', () => this.updateFromAPI());
+                this.battery.addEventListener('dischargingtimechange', () => this.updateFromAPI());
+            },
+
+            startMonitoring() {
+                // Chart update every 10 seconds
+                this.chartInterval = setInterval(() => {
+                    if (this.isLive && this.battery) {
+                        const level = Math.round(this.battery.level * 100);
+                        this.chartData.push({ time: Date.now(), level: level });
+                        if (this.chartData.length > 60) this.chartData.shift();
+                        drawChart('batteryChart', this.chartData);
+                    }
+                }, 10000);
+
+                // History log every 30 seconds
+                this.updateInterval = setInterval(() => {
+                    if (this.isLive && this.battery) {
+                        const level = Math.round(this.battery.level * 100);
+                        const now = new Date();
+                        const entry = {
+                            time: now.toLocaleTimeString('id-ID'),
+                            timestamp: now.getTime(),
+                            level: level,
+                            charging: this.battery.charging
+                        };
+                        this.historyData.push(entry);
+                        updateHistoryUI();
+                    }
+                }, 30000);
+            },
+
+            setLiveMode(enabled) {
+                this.isLive = enabled;
+                if (enabled && this.battery) {
+                    this.updateFromAPI();
+                    document.getElementById('batterySlider').disabled = true;
+                    document.getElementById('liveModeBtn').style.background = 'var(--accent-green)';
+                    document.getElementById('liveModeBtn').style.color = '#000';
+                    document.getElementById('manualModeBtn').style.background = 'rgba(255,255,255,0.1)';
+                    document.getElementById('manualModeBtn').style.color = 'var(--text-secondary)';
+                } else {
+                    document.getElementById('batterySlider').disabled = false;
+                    document.getElementById('manualModeBtn').style.background = 'var(--accent-purple)';
+                    document.getElementById('manualModeBtn').style.color = '#fff';
+                    document.getElementById('liveModeBtn').style.background = 'rgba(255,255,255,0.1)';
+                    document.getElementById('liveModeBtn').style.color = 'var(--text-secondary)';
+                }
+            }
+        };
+
+        // ============================================
+        // UI UPDATE FUNCTIONS
+        // ============================================
+        function updateAllDisplays(level, charging, chargeTime, dischargeTime) {
+            // Battery visual
+            const fill = document.getElementById('batteryFill');
+            fill.style.height = level + '%';
+            fill.className = 'battery-fill';
+            if (level >= 60) fill.classList.add('green');
+            else if (level >= 30) fill.classList.add('yellow');
+            else if (level >= 15) fill.classList.add('orange');
+            else fill.classList.add('red');
+
+            document.getElementById('batteryPercentDisplay').innerHTML = level + '<span>%</span>';
+
+            // Charging bolt
+            const bolt = document.getElementById('chargingBolt');
+            bolt.classList.toggle('show', charging);
+
+            // Device banner
+            document.getElementById('deviceBatPercent').textContent = level + '%';
+            document.getElementById('deviceBatPercent').style.color =
+                level >= 60 ? 'var(--accent-green)' : level >= 30 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+
+            // Status text
+            let statusText, statusBg, statusColor;
+            if (charging) {
+                statusText = '⚡ Sedang Charging';
+                statusBg = 'rgba(0,229,255,0.1)';
+                statusColor = 'var(--accent-cyan)';
+            } else if (level >= 80) {
+                statusText = '✅ Sangat Baik — Performa Optimal';
+                statusBg = 'rgba(0,230,118,0.1)';
+                statusColor = 'var(--accent-green)';
+            } else if (level >= 60) {
+                statusText = '✅ Baik — Masih Stabil';
+                statusBg = 'rgba(0,230,118,0.1)';
+                statusColor = 'var(--accent-green)';
+            } else if (level >= 40) {
+                statusText = '👍 Normal — Masih Aman';
+                statusBg = 'rgba(0,230,118,0.1)';
+                statusColor = 'var(--accent-green)';
+            } else if (level >= 30) {
+                statusText = '⚡ Cukup — Siapkan Charger';
+                statusBg = 'rgba(255,214,0,0.1)';
+                statusColor = 'var(--accent-yellow)';
+            } else if (level >= 20) {
+                statusText = '⚠️ Rendah — Segera Charge!';
+                statusBg = 'rgba(255,145,0,0.1)';
+                statusColor = 'var(--accent-orange)';
+            } else if (level >= 10) {
+                statusText = '🔴 Kritis — Charge Sekarang!';
+                statusBg = 'rgba(255,23,68,0.1)';
+                statusColor = 'var(--accent-red)';
+            } else {
+                statusText = '🚨 BAHAYA — Shutdown Segera!';
+                statusBg = 'rgba(255,23,68,0.15)';
+                statusColor = 'var(--accent-red)';
+            }
+
+            const statusEl = document.getElementById('batteryStatusText');
+            statusEl.textContent = statusText;
+            statusEl.style.background = statusBg;
+            statusEl.style.color = statusColor;
+
+            // Voltage estimation
+            const voltage = estimateVoltage(level);
+
+            // Side info
+            document.getElementById('sideCharging').textContent = charging ? '⚡ Charging' : '🔋 Discharging';
+            document.getElementById('sideCharging').style.color = charging ? 'var(--accent-cyan)' : 'var(--accent-green)';
+
+            if (charging && chargeTime !== Infinity && chargeTime > 0) {
+                const mins = Math.round(chargeTime / 60);
+                document.getElementById('sideTime').textContent = '~' + mins + ' menit';
+                document.getElementById('sideTimeSub').textContent = 'sampai penuh';
+            } else if (!charging && dischargeTime !== Infinity && dischargeTime > 0) {
+                const hrs = Math.floor(dischargeTime / 3600);
+                const mins = Math.round((dischargeTime % 3600) / 60);
+                document.getElementById('sideTime').textContent = hrs > 0 ? '~' + hrs + 'j ' + mins + 'm' : '~' + mins + ' menit';
+                document.getElementById('sideTimeSub').textContent = 'sampai habis';
+            } else {
+                document.getElementById('sideTime').textContent = '--';
+                document.getElementById('sideTimeSub').textContent = charging ? 'menghitung...' : 'estimasi tidak tersedia';
+            }
+
+            document.getElementById('sideVoltage').textContent = voltage + 'V';
+
+            // Detail grid
+            document.getElementById('detailLevel').textContent = level + '%';
+            document.getElementById('detailVoltage').textContent = voltage + 'V';
+            document.getElementById('detailVoltage').className = 'value ' + (level >= 40 ? 'glow-green' : level >= 20 ? 'glow-yellow' : 'glow-red');
+
+            const capacity = Math.round(level * deviceInfo.estimatedBattery / 100);
+            document.getElementById('detailCapacity').textContent = capacity + 'mAh';
+            document.getElementById('detailCapacitySub').textContent = 'dari ~' + deviceInfo.estimatedBattery + 'mAh';
+
+            const sotEstimate = estimateSOT(level, deviceInfo.estimatedBattery);
+            document.getElementById('detailSOT').textContent = sotEstimate;
+
+            document.getElementById('detailCharging').textContent = charging ? '⚡ Charging' : '🔋 Tidak';
+            document.getElementById('detailCharging').style.color = charging ? 'var(--accent-cyan)' : 'var(--text-primary)';
+            document.getElementById('detailChargingSub').textContent = charging ?
+                (chargeTime !== Infinity && chargeTime > 0 ? 'Penuh dalam ~' + Math.round(chargeTime / 60) + ' menit' : 'Menghitung...') :
+                (dischargeTime !== Infinity && dischargeTime > 0 ? 'Habis dalam ~' + formatTime(dischargeTime) : 'Gunakan normal');
+
+            if (level >= 60) {
+                document.getElementById('detailRecommend').textContent = 'Aman Dipakai';
+                document.getElementById('detailRecommendSub').textContent = 'belum perlu charge';
+            } else if (level >= 30) {
+                document.getElementById('detailRecommend').textContent = 'Siapkan Charger';
+                document.getElementById('detailRecommendSub').textContent = 'charge di 20-30% ideal';
+            } else if (level >= 15) {
+                document.getElementById('detailRecommend').textContent = 'Segera Charge!';
+                document.getElementById('detailRecommendSub').textContent = 'jangan tunggu 0%';
+            } else {
+                document.getElementById('detailRecommend').textContent = '⚡ CHARGE SEKARANG!';
+                document.getElementById('detailRecommendSub').textContent = 'risiko shutdown mendadak';
+            }
+
+            // Stats row
+            document.getElementById('statLevel').textContent = level + '%';
+            document.getElementById('statLevel').style.color = level >= 60 ? 'var(--accent-green)' : level >= 30 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+            document.getElementById('statCharging').textContent = charging ? '⚡ Ya' : '🔋 Tidak';
+            document.getElementById('statCharging').style.color = charging ? 'var(--accent-cyan)' : 'var(--text-primary)';
+
+            if (charging && chargeTime !== Infinity && chargeTime > 0) {
+                document.getElementById('statTime').textContent = '~' + Math.round(chargeTime / 60) + 'm';
+            } else if (!charging && dischargeTime !== Infinity && dischargeTime > 0) {
+                document.getElementById('statTime').textContent = '~' + formatTime(dischargeTime);
+            } else {
+                document.getElementById('statTime').textContent = '--';
+            }
+            document.getElementById('statVoltage').textContent = voltage + 'V';
+
+            // Slider sync (only in live mode)
+            if (BatteryEngine.isLive) {
+                document.getElementById('batterySlider').value = level;
+            }
+        }
+
+        function estimateVoltage(level) {
+            // Li-Po discharge curve approximation
+            if (level >= 95) return (4.35 + (level - 95) * 0.01).toFixed(2);
+            if (level >= 80) return (4.10 + (level - 80) * 0.0167).toFixed(2);
+            if (level >= 60) return (3.85 + (level - 60) * 0.0125).toFixed(2);
+            if (level >= 40) return (3.70 + (level - 40) * 0.0075).toFixed(2);
+            if (level >= 30) return (3.62 + (level - 30) * 0.008).toFixed(2);
+            if (level >= 20) return (3.52 + (level - 20) * 0.01).toFixed(2);
+            if (level >= 10) return (3.42 + (level - 10) * 0.01).toFixed(2);
+            if (level >= 5) return (3.35 + (level - 5) * 0.014).toFixed(2);
+            return (3.30 + level * 0.01).toFixed(2);
+        }
+
+        function estimateSOT(level, batteryCapacity) {
+            // Average power consumption ~400-500mW for typical smartphone
+            const avgCurrent = 450; // mA average
+            const availableMah = level * batteryCapacity / 100;
+            const hours = availableMah / avgCurrent;
+            if (hours >= 1) return '~' + hours.toFixed(1) + ' jam';
+            return '~' + Math.round(hours * 60) + ' menit';
+        }
+
+        function formatTime(seconds) {
+            if (seconds === Infinity || seconds <= 0) return '--';
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.round((seconds % 3600) / 60);
+            if (hrs > 0) return hrs + 'j ' + mins + 'm';
+            return mins + 'm';
+        }
+
+        // ============================================
+        // CHART DRAWING
+        // ============================================
+        function drawChart(canvasId, data) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * 2;
+            canvas.height = rect.height * 2;
+            ctx.scale(2, 2);
+            const w = rect.width;
+            const h = rect.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            if (data.length < 2) {
+                ctx.fillStyle = '#6a6a80';
+                ctx.font = '12px Inter';
+                ctx.textAlign = 'center';
+                ctx.fillText('Menunggu data...', w / 2, h / 2);
+                return;
+            }
+
+            const padding = 30;
+            const chartW = w - padding * 2;
+            const chartH = h - padding * 2;
+
+            // Grid lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding + (chartH / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding, y);
+                ctx.lineTo(w - padding, y);
+                ctx.stroke();
+
+                ctx.fillStyle = '#6a6a80';
+                ctx.font = '9px Inter';
+                ctx.textAlign = 'right';
+                ctx.fillText(Math.round(100 - (i * 25)) + '%', padding - 5, y + 3);
+            }
+
+            // Line
+            const minTime = data[0].time;
+            const maxTime = data[data.length - 1].time;
+            const timeRange = maxTime - minTime || 1;
+
+            ctx.beginPath();
+            ctx.strokeStyle = '#7c4dff';
+            ctx.lineWidth = 2;
+            ctx.lineJoin = 'round';
+
+            data.forEach((point, i) => {
+                const x = padding + ((point.time - minTime) / timeRange) * chartW;
+                const y = padding + chartH - (point.level / 100) * chartH;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+
+            // Fill gradient
+            const lastPoint = data[data.length - 1];
+            const lastX = padding + ((lastPoint.time - minTime) / timeRange) * chartW;
+            ctx.lineTo(lastX, padding + chartH);
+            ctx.lineTo(padding, padding + chartH);
+            ctx.closePath();
+            const gradient = ctx.createLinearGradient(0, padding, 0, padding + chartH);
+            gradient.addColorStop(0, 'rgba(124,77,255,0.3)');
+            gradient.addColorStop(1, 'rgba(124,77,255,0)');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Dots
+            data.forEach((point) => {
+                const x = padding + ((point.time - minTime) / timeRange) * chartW;
+                const y = padding + chartH - (point.level / 100) * chartH;
+                ctx.beginPath();
+                ctx.arc(x, y, 3, 0, Math.PI * 2);
+                ctx.fillStyle = '#7c4dff';
+                ctx.fill();
+            });
+
+            // Last point highlight
+            const lastY = padding + chartH - (lastPoint.level / 100) * chartH;
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#00e676';
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 8, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(0,230,118,0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // ============================================
+        // HISTORY UI
+        // ============================================
+        function updateHistoryUI() {
+            const data = BatteryEngine.historyData;
+            if (data.length === 0) return;
+
+            const levels = data.map(d => d.level);
+            const max = Math.max(...levels);
+            const min = Math.min(...levels);
+            const avg = Math.round(levels.reduce((a, b) => a + b, 0) / levels.length);
+
+            document.getElementById('histMax').textContent = max + '%';
+            document.getElementById('histMin').textContent = min + '%';
+            document.getElementById('histAvg').textContent = avg + '%';
+            document.getElementById('histCount').textContent = data.length;
+
+            // Duration
+            const durationMs = Date.now() - BatteryEngine.startTime;
+            const durMins = Math.round(durationMs / 60000);
+            const durHrs = Math.floor(durMins / 60);
+            document.getElementById('histDuration').textContent = durHrs > 0 ? durHrs + 'j ' + (durMins % 60) + 'm' : durMins + 'm';
+
+            // Drain rate
+            if (data.length >= 2) {
+                const first = data[0];
+                const last = data[data.length - 1];
+                const timeDiffHrs = (last.timestamp - first.timestamp) / 3600000;
+                if (timeDiffHrs > 0 && !last.charging) {
+                    const drainRate = ((first.level - last.level) / timeDiffHrs).toFixed(1);
+                    document.getElementById('histDrain').textContent = drainRate + '%';
+                } else if (last.charging) {
+                    document.getElementById('histDrain').textContent = '⚡';
+                }
+            }
+
+            // Log entries
+            const logEl = document.getElementById('historyLog');
+            logEl.innerHTML = '';
+            const reversed = [...data].reverse();
+            reversed.forEach(entry => {
+                const div = document.createElement('div');
+                div.className = 'history-entry';
+                const statusColor = entry.charging ? 'var(--accent-cyan)' :
+                    entry.level >= 60 ? 'var(--accent-green)' :
+                    entry.level >= 30 ? 'var(--accent-yellow)' : 'var(--accent-red)';
+                const statusBg = entry.charging ? 'rgba(0,229,255,0.1)' :
+                    entry.level >= 60 ? 'rgba(0,230,118,0.1)' :
+                    entry.level >= 30 ? 'rgba(255,214,0,0.1)' : 'rgba(255,23,68,0.1)';
+                div.innerHTML = `
+                    <span class="he-time">${entry.time}</span>
+                    <span class="he-level" style="color:${statusColor}">${entry.level}%</span>
+                    <span class="he-status" style="background:${statusBg};color:${statusColor}">${entry.charging ? '⚡ Charging' : '🔋 Discharging'}</span>
+                `;
+                logEl.appendChild(div);
+            });
+
+            // History chart
+            const chartPoints = data.map(d => ({ time: d.timestamp, level: d.level }));
+            drawChart('historyChart', chartPoints);
+        }
+
+        function clearHistory() {
+            BatteryEngine.historyData = [];
+            BatteryEngine.startTime = Date.now();
+            document.getElementById('historyLog').innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:12px;padding:20px;">Riwayat dihapus. Menunggu data baru...</p>';
+            document.getElementById('histMax').textContent = '--%';
+            document.getElementById('histMin').textContent = '--%';
+            document.getElementById('histAvg').textContent = '--%';
+            document.getElementById('histCount').textContent = '0';
+            document.getElementById('histDrain').textContent = '--';
+            document.getElementById('histDuration').textContent = '--';
+        }
+
+        function exportHistory() {
+            const data = BatteryEngine.historyData;
+            if (data.length === 0) { alert('Belum ada data riwayat!'); return; }
+
+            let csv = 'Waktu,Level(%),Status\n';
+            data.forEach(d => {
+                csv += `${d.time},${d.level},${d.charging ? 'Charging' : 'Discharging'}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `battery_history_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ============================================
+        // PERCENT TABLE GENERATION
+        // ============================================
+        function generatePercentTable() {
+            const tbody = document.getElementById('percentTableBody');
+            tbody.innerHTML = '';
+
+            for (let i = 100; i >= 0; i--) {
+                let voltage, status, condition, rating, recommendation, colorClass;
+
+                if (i >= 95) {
+                    voltage = (4.35 + (i - 95) * 0.01).toFixed(2);
+                    status = 'Penuh'; condition = 'Sangat Optimal'; rating = 5;
+                    recommendation = 'Aman, lepas charger'; colorClass = 'green';
+                } else if (i >= 80) {
+                    voltage = (4.10 + (i - 80) * 0.0167).toFixed(2);
+                    status = 'Sangat Baik'; condition = 'Performa Maksimal'; rating = 5;
+                    recommendation = 'Aman untuk semua aktivitas'; colorClass = 'green';
+                } else if (i >= 60) {
+                    voltage = (3.85 + (i - 60) * 0.0125).toFixed(2);
+                    status = 'Baik'; condition = 'Stabil & Efisien'; rating = 4;
+                    recommendation = 'Zona terbaik untuk gaming'; colorClass = 'green';
+                } else if (i >= 40) {
+                    voltage = (3.70 + (i - 40) * 0.0075).toFixed(2);
+                    status = 'Normal'; condition = 'Masih Optimal'; rating = 4;
+                    recommendation = 'Masih aman untuk semua'; colorClass = 'green';
+                } else if (i >= 30) {
+                    voltage = (3.62 + (i - 30) * 0.008).toFixed(2);
+                    status = 'Cukup'; condition = 'Mulai Turun'; rating = 3;
+                    recommendation = 'Siapkan charger'; colorClass = 'yellow';
+                } else if (i >= 20) {
+                    voltage = (3.52 + (i - 20) * 0.01).toFixed(2);
+                    status = 'Rendah'; condition = 'Perlu Charge'; rating = 2;
+                    recommendation = 'Segera charge!'; colorClass = 'orange';
+                } else if (i >= 10) {
+                    voltage = (3.42 + (i - 10) * 0.01).toFixed(2);
+                    status = 'Kritis'; condition = 'Battery Saver Aktif'; rating = 1;
+                    recommendation = 'Charge SEKARANG!'; colorClass = 'orange';
+                } else if (i >= 5) {
+                    voltage = (3.35 + (i - 5) * 0.014).toFixed(2);
+                    status = 'Sangat Kritis'; condition = 'Performa Diturunkan'; rating = 1;
+                    recommendation = '⚡ CHARGE SEKARANG!'; colorClass = 'red';
+                } else {
+                    voltage = (3.30 + i * 0.01).toFixed(2);
+                    status = 'Bahaya'; condition = 'Risiko Shutdown'; rating = 0;
+                    recommendation = '🚨 MATI SEGERA!'; colorClass = 'red';
+                }
+
+                const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><span class="percent-badge ${colorClass}">${i}%</span></td>
+                    <td style="font-weight:600;font-family:monospace;">${voltage}V</td>
+                    <td><span class="status-dot ${colorClass}"></span>${status}</td>
+                    <td style="color:var(--text-secondary);font-size:11px;">${condition}</td>
+                    <td><span class="rating-stars">${stars}</span></td>
+                    <td style="font-size:11px;color:var(--text-secondary);">${recommendation}</td>
+                `;
+                tbody.appendChild(row);
+            }
+        }
+
+        // ============================================
+        // SOT ESTIMATOR (Dynamic based on device)
+        // ============================================
+        function updateSOTEstimator() {
+            const cap = deviceInfo.estimatedBattery;
+            // Base drain rates in mA for different activities
+            const rates = {
+                reading: 250, chatting: 350, streaming: 450,
+                gaming: 700, heavyGaming: 1000, camera: 800,
+                music: 50, standby: 30
+            };
+
+            document.getElementById('sotReading').textContent = (cap / rates.reading).toFixed(1) + '-' + (cap / (rates.reading * 0.8)).toFixed(1);
+            document.getElementById('sotChatting').textContent = (cap / rates.chatting).toFixed(1) + '-' + (cap / (rates.chatting * 0.8)).toFixed(1);
+            document.getElementById('sotStreaming').textContent = (cap / rates.streaming).toFixed(1) + '-' + (cap / (rates.streaming * 0.85)).toFixed(1);
+            document.getElementById('sotGaming').textContent = (cap / rates.gaming).toFixed(1) + '-' + (cap / (rates.gaming * 0.8)).toFixed(1);
+            document.getElementById('sotHeavyGaming').textContent = (cap / rates.heavyGaming).toFixed(1) + '-' + (cap / (rates.heavyGaming * 0.85)).toFixed(1);
+            document.getElementById('sotCamera').textContent = (cap / rates.camera).toFixed(1) + '-' + (cap / (rates.camera * 0.8)).toFixed(1);
+            document.getElementById('sotMusic').textContent = Math.round(cap / rates.music) + '-' + Math.round(cap / (rates.music * 0.7));
+            document.getElementById('sotStandby').textContent = Math.round(cap / rates.standby) + '-' + Math.round(cap / (rates.standby * 0.6));
+        }
+
+        // ============================================
+        // DRAIN RATE BARS
+        // ============================================
+        function generateDrainRateBars() {
+            const container = document.getElementById('drainRateBars');
+            const cap = deviceInfo.estimatedBattery;
+            const activities = [
+                { label: 'Standby', drain: 1.5, color: 'var(--accent-cyan)' },
+                { label: 'Musik', drain: 2.5, color: 'var(--accent-green)' },
+                { label: 'Membaca', drain: 8, color: 'var(--accent-green)' },
+                { label: 'Chatting', drain: 12, color: 'var(--accent-green)' },
+                { label: 'YouTube', drain: 14, color: 'var(--accent-yellow)' },
+                { label: 'Browsing', drain: 16, color: 'var(--accent-yellow)' },
+                { label: 'MLBB', drain: 22, color: 'var(--accent-orange)' },
+                { label: 'Kamera', drain: 25, color: 'var(--accent-orange)' },
+                { label: 'Genshin', drain: 32, color: 'var(--accent-red)' },
+            ];
+
+            container.innerHTML = '';
+            activities.forEach(act => {
+                const pct = Math.min(act.drain / 35 * 100, 100);
+                container.innerHTML += `
+                    <div class="comparison-bar">
+                        <span class="bar-label">${act.label}</span>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width:${pct}%;background:${act.color};"></div>
+                        </div>
+                        <span class="bar-value" style="color:${act.color};">~${act.drain}%</span>
+                    </div>
+                `;
+            });
+        }
+
+        // ============================================
+        // CHARGING BARS
+        // ============================================
+        function generateChargingBars() {
+            const container = document.getElementById('chargingBars');
+            const chargerW = deviceInfo.estimatedCharger;
+            const cap = deviceInfo.estimatedBattery;
+
+            // Estimate charging times based on charger wattage
+            // Efficiency ~85%, and charging slows down after 80%
+            const totalMin = Math.round((cap / (chargerW * 1000 / 3.7)) * 60 / 0.85);
+            const t25 = Math.round(totalMin * 0.22);
+            const t50 = Math.round(totalMin * 0.40);
+            const t75 = Math.round(totalMin * 0.65);
+            const t100 = totalMin;
+
+            const bars = [
+                { label: '0 → 25%', pct: 25, time: t25, color: 'var(--accent-cyan)' },
+                { label: '0 → 50%', pct: 45, time: t50, color: 'var(--accent-green)' },
+                { label: '0 → 75%', pct: 65, time: t75, color: 'var(--accent-yellow)' },
+                { label: '0 → 100%', pct: 100, time: t100, color: 'var(--accent-green)' },
+            ];
+
+            container.innerHTML = '';
+            bars.forEach(b => {
+                container.innerHTML += `
+                    <div class="comparison-bar">
+                        <span class="bar-label">${b.label}</span>
+                        <div class="bar-track">
+                            <div class="bar-fill" style="width:${b.pct}%;background:${b.color};"></div>
+                        </div>
+                        <span class="bar-value" style="color:${b.color};">~${b.time}m</span>
+                    </div>
+                `;
+            });
+
+            container.innerHTML += `<p style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:10px;">Estimasi berdasarkan charger ${chargerW}W & baterai ${cap}mAh</p>`;
+        }
+
+        // ============================================
+        // TOGGLE SAVINGS CALCULATOR
+        // ============================================
+        function calculateSavings() {
+            const toggles = document.querySelectorAll('#toggleSettings input[type="checkbox"]');
+            let total = 0;
+            toggles.forEach(t => { if (t.checked) total += parseInt(t.dataset.impact) || 0; });
+            const effective = Math.min(total * 0.7, 65);
+            const el = document.getElementById('totalSavings');
+            el.textContent = '~' + Math.round(effective) + '%';
+            el.style.color = effective >= 40 ? 'var(--accent-green)' : effective >= 20 ? 'var(--accent-yellow)' : 'var(--accent-orange)';
+        }
+
+        // ============================================
+        // TAB NAVIGATION
+        // ============================================
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+
+            // Redraw charts when switching to monitor/history tab
+            if (tabName === 'monitor' && BatteryEngine.chartData.length > 0) {
+                setTimeout(() => drawChart('batteryChart', BatteryEngine.chartData), 100);
+            }
+            if (tabName === 'history' && BatteryEngine.historyData.length > 0) {
+                const chartPoints = BatteryEngine.historyData.map(d => ({ time: d.timestamp, level: d.level }));
+                setTimeout(() => drawChart('historyChart', chartPoints), 100);
+            }
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        let deviceInfo;
+
+        async function init() {
+            // Detect device
+            deviceInfo = DeviceDetector.detect();
+
+            // Update device banner
+            document.getElementById('deviceIcon').textContent =
+                deviceInfo.isTablet ? '📱' : deviceInfo.isMobile ? '📱' : '💻';
+            document.getElementById('deviceName').textContent =
+                deviceInfo.brand !== 'Unknown' ? `${deviceInfo.brand} ${deviceInfo.model}` : deviceInfo.model;
+            document.getElementById('deviceSpecs').innerHTML = `
+                ${deviceInfo.os} ${deviceInfo.osVersion} • ${deviceInfo.browser} ${deviceInfo.browserVersion}<br>
+                Baterai: ~${deviceInfo.estimatedBattery}mAh • Charger: ~${deviceInfo.estimatedCharger}W • Layar: ${deviceInfo.screenType}
+            `;
+
+            // Info bar
+            document.getElementById('infoDevice').textContent = deviceInfo.brand + ' ' + (deviceInfo.model.length > 20 ? deviceInfo.model.substring(0, 20) + '...' : deviceInfo.model);
+            document.getElementById('infoBattery').textContent = '~' + deviceInfo.estimatedBattery + 'mAh';
+            document.getElementById('infoCharger').textContent = '~' + deviceInfo.estimatedCharger + 'W';
+            document.getElementById('infoOS').textContent = deviceInfo.os + (deviceInfo.osVersion ? ' ' + deviceInfo.osVersion : '');
+            document.getElementById('infoBatType').textContent = deviceInfo.batteryType;
+            document.getElementById('infoBrowser').textContent = deviceInfo.browser;
+
+            // Side platform info
+            document.getElementById('sidePlatform').textContent = deviceInfo.brand;
+            document.getElementById('sidePlatformSub').textContent = deviceInfo.os + ' • ' + deviceInfo.screenType;
+
+            // Generate static content
+            generatePercentTable();
+            updateSOTEstimator();
+            generateDrainRateBars();
+            generateChargingBars();
+            calculateSavings();
+
+            // Tab navigation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            // Slider
+            document.getElementById('batterySlider').addEventListener('input', function() {
+                if (!BatteryEngine.isLive) {
+                    const val = parseInt(this.value);
+                    updateAllDisplays(val, false, Infinity, Infinity);
+                }
+            });
+
+            // Mode buttons
+            document.getElementById('liveModeBtn').addEventListener('click', () => BatteryEngine.setLiveMode(true));
+            document.getElementById('manualModeBtn').addEventListener('click', () => BatteryEngine.setLiveMode(false));
+
+            // Toggle savings
+            document.querySelectorAll('#toggleSettings input[type="checkbox"]').forEach(t => {
+                t.addEventListener('change', calculateSavings);
+            });
+
+            // Initialize Battery API
+            await BatteryEngine.init();
+
+            // Initial chart draw
+            if (BatteryEngine.battery) {
+                const level = Math.round(BatteryEngine.battery.level * 100);
+                BatteryEngine.chartData.push({ time: Date.now(), level: level });
+                drawChart('batteryChart', BatteryEngine.chartData);
+            }
+
+            // Handle resize for charts
+            window.addEventListener('resize', () => {
+                if (BatteryEngine.chartData.length > 0) drawChart('batteryChart', BatteryEngine.chartData);
+                if (BatteryEngine.historyData.length > 0) {
+                    const pts = BatteryEngine.historyData.map(d => ({ time: d.timestamp, level: d.level }));
+                    drawChart('historyChart', pts);
+                }
+            });
+        }
+
+        // Start
+        init();
+    </script>
+</body>
+</html>
+
