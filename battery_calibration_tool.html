@@ -257,9 +257,7 @@
                 else if (ua.includes("Windows")) {
                     brand = "PC / Laptop";
                     deviceName = "Windows Device";
-                    if(navigator.getBattery) {
-                        batteryCap = "Terdeteksi via System";
-                    }
+                    batteryCap = "Tidak tersedia via Web API";
                 }
 
                 os = ua.includes("Android") ? "Android" : (ua.includes("Windows") ? "Windows" : "iOS/Other");
@@ -429,7 +427,7 @@
                 lastChargingState = charging;
             } else if (lastChargingState !== charging) {
                 lastChargingState = charging;
-                pushRealtimeAlert(charging ? 'Pengisian daya dimulai.' : 'Pengisian daya berhenti.', 'info', true);
+                pushRealtimeAlert(charging ? 'Pengisian daya dimulai.' : 'Pengisian daya berhenti.', charging ? 'success' : 'warning', true);
             }
 
             const bucket = level <= 5 ? 5 : level <= 10 ? 10 : level <= 20 ? 20 : null;
