@@ -706,7 +706,7 @@
             </span>
             <span id="apiStatus" style="font-size:10px;color:var(--text-muted);margin-left:8px;"></span>
             <div style="font-size:10px;color:var(--text-secondary);margin-top:8px;">
-                Update terbaru: <strong id="lastSyncTime">--</strong> • Koneksi: <strong id="networkStatus">--</strong>
+                Update terakhir: <strong id="lastSyncTime">--</strong> • Koneksi: <strong id="networkStatus">--</strong>
             </div>
             <div id="realtimeAlerts" style="max-width:680px;margin:10px auto 0;"></div>
         </div>
@@ -1479,7 +1479,7 @@
                     <span class="emoji">📜</span>
                     Riwayat Baterai Real-Time
                 </div>
-                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Log otomatis perubahan baterai setiap 10 detik. Data disimpan di memori sesi halaman.</p>
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Log otomatis perubahan baterai setiap 10 detik. Data disimpan sementara di memori halaman (bukan sessionStorage) dan hilang saat tab ditutup.</p>
 
                 <div class="alert-banner info">
                     <span class="alert-icon">📊</span>
@@ -1540,6 +1540,8 @@
         // ============================================
         // DEVICE DETECTION ENGINE
         // ============================================
+        const APP_LOCALE = navigator.language || 'id-ID';
+
         const DeviceDetector = {
             detect() {
                 const ua = navigator.userAgent;
@@ -1986,13 +1988,12 @@
                 // History log every 10 seconds
                 this.updateInterval = setInterval(() => {
                     if (this.isLive && this.battery) {
-                        const level = Math.round(this.battery.level * 100);
                         const now = new Date();
                         const entry = {
-                            time: now.toLocaleTimeString('id-ID'),
+                            time: now.toLocaleTimeString(APP_LOCALE),
                             timestamp: now.getTime(),
-                            level: level,
-                            charging: this.battery.charging
+                            level: this.currentLevel,
+                            charging: this.isCharging
                         };
                         this.historyData.push(entry);
                         updateHistoryUI();
@@ -2009,7 +2010,11 @@
                     pushRealtimeAlert(message, charging ? 'success' : 'warning', true);
                 }
 
-                const lowBatteryBucket = level <= 5 ? 5 : level <= 10 ? 10 : level <= 20 ? 20 : null;
+                let lowBatteryBucket = null;
+                if (level <= 5) lowBatteryBucket = 5;
+                else if (level <= 10) lowBatteryBucket = 10;
+                else if (level <= 20) lowBatteryBucket = 20;
+
                 if (lowBatteryBucket !== this.lastLowBatteryBucket) {
                     this.lastLowBatteryBucket = lowBatteryBucket;
                     if (lowBatteryBucket) {
@@ -2054,6 +2059,7 @@
                     await Notification.requestPermission();
                 } catch (e) {
                     console.log('Notification permission error:', e);
+                    pushRealtimeAlert('Izin notifikasi gagal diminta. Alert browser mungkin tidak aktif.', 'warning', false);
                 }
             }
         }
@@ -2081,7 +2087,7 @@
         }
 
         function updateLastSyncTime(source = 'Battery API') {
-            const timeText = new Date().toLocaleTimeString('id-ID');
+            const timeText = new Date().toLocaleTimeString(APP_LOCALE);
             const lastSyncEl = document.getElementById('lastSyncTime');
             if (lastSyncEl) {
                 lastSyncEl.textContent = `${timeText} (${source})`;

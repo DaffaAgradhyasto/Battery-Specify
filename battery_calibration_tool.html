@@ -175,9 +175,11 @@
 
     <script>
         // --- 1. CONFIG & DATA ---
+        const APP_LOCALE = navigator.language || 'id-ID';
         const USER_BATTERY_HEALTH = 94; // Sesuai input user
         let lastLowBatteryBucket = null;
         let lastChargingState = null;
+        let batteryRefreshInterval = null;
 
         // Data referensi per persen
         const batteryData = [];
@@ -270,7 +272,6 @@
                 document.getElementById('dev-brand').innerText = brand;
                 document.getElementById('dev-os').innerText = os;
                 document.getElementById('dev-battery-cap').innerText = batteryCap;
-                updateLastSyncTime('Device API');
             } catch (e) {
                 loadingEl.classList.add('hidden');
                 errorEl.classList.remove('hidden-section');
@@ -328,7 +329,8 @@
                 battery.addEventListener('chargingchange', updateBatteryUI);
                 battery.addEventListener('chargingtimechange', updateBatteryUI);
                 battery.addEventListener('dischargingtimechange', updateBatteryUI);
-                setInterval(updateBatteryUI, 5000);
+                if (batteryRefreshInterval) clearInterval(batteryRefreshInterval);
+                batteryRefreshInterval = setInterval(updateBatteryUI, 5000);
             } else {
                 document.getElementById('battery-status-text').innerText = "Browser tidak mendukung API Baterai";
                 updateLastSyncTime('Manual');
@@ -379,7 +381,7 @@
         function updateLastSyncTime(source) {
             const el = document.getElementById('last-sync-time');
             if (el) {
-                el.textContent = `${new Date().toLocaleTimeString('id-ID')} (${source})`;
+                el.textContent = `${new Date().toLocaleTimeString(APP_LOCALE)} (${source})`;
             }
         }
 
@@ -395,6 +397,7 @@
                     await Notification.requestPermission();
                 } catch (e) {
                     console.log('Notification permission error:', e);
+                    pushRealtimeAlert('Izin notifikasi gagal diminta. Alert browser mungkin tidak aktif.', 'warning', false);
                 }
             }
         }
@@ -430,7 +433,11 @@
                 pushRealtimeAlert(charging ? 'Pengisian daya dimulai.' : 'Pengisian daya berhenti.', charging ? 'success' : 'warning', true);
             }
 
-            const bucket = level <= 5 ? 5 : level <= 10 ? 10 : level <= 20 ? 20 : null;
+            let bucket = null;
+            if (level <= 5) bucket = 5;
+            else if (level <= 10) bucket = 10;
+            else if (level <= 20) bucket = 20;
+
             if (bucket !== lastLowBatteryBucket) {
                 lastLowBatteryBucket = bucket;
                 if (bucket) {
@@ -454,6 +461,10 @@
             detectDevice();
             initBatteryMonitor();
             renderTable();
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (batteryRefreshInterval) clearInterval(batteryRefreshInterval);
         });
 
     </script>
