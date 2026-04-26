@@ -705,6 +705,10 @@
                 LIVE MONITORING
             </span>
             <span id="apiStatus" style="font-size:10px;color:var(--text-muted);margin-left:8px;"></span>
+            <div style="font-size:10px;color:var(--text-secondary);margin-top:8px;">
+                Update terakhir: <strong id="lastSyncTime">--</strong> • Koneksi: <strong id="networkStatus">--</strong>
+            </div>
+            <div id="realtimeAlerts" style="max-width:680px;margin:10px auto 0;"></div>
         </div>
 
         <!-- Phone Info Bar -->
@@ -1475,7 +1479,7 @@
                     <span class="emoji">📜</span>
                     Riwayat Baterai Real-Time
                 </div>
-                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Log otomatis perubahan baterai setiap 30 detik. Data disimpan di sessionStorage (hilang saat tab ditutup).</p>
+                <p style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;">Log otomatis perubahan baterai setiap 10 detik. Data disimpan di memori sesi halaman.</p>
 
                 <div class="alert-banner info">
                     <span class="alert-icon">📊</span>
@@ -1528,7 +1532,7 @@
         <footer class="footer">
             <p>🔋 Battery Master Center — Universal Device Support</p>
             <p style="margin-top:4px;">Mendeteksi otomatis & monitoring real-time via Battery API</p>
-            <p style="margin-top:6px;color:var(--accent-purple);">Data akurat berdasarkan spesifikasi terdeteksi dari perangkat kamu</p>
+            <p style="margin-top:6px;color:var(--accent-purple);">Level/status baterai real-time dari API browser, spesifikasi perangkat bersifat estimasi terbaik</p>
         </footer>
     </div>
 
@@ -1910,6 +1914,9 @@
             chartData: [],
             updateInterval: null,
             chartInterval: null,
+            freshnessInterval: null,
+            lastLowBatteryBucket: null,
+            lastChargingState: null,
 
             async init() {
                 try {
@@ -1946,6 +1953,8 @@
                 this.chargingTime = this.battery.chargingTime;
                 this.dischargingTime = this.battery.dischargingTime;
                 updateAllDisplays(this.currentLevel, this.isCharging, this.chargingTime, this.dischargingTime);
+                updateLastSyncTime('Battery API');
+                this.handleRealtimeNotifications(this.currentLevel, this.isCharging);
             },
 
             setupListeners() {
@@ -1967,7 +1976,14 @@
                     }
                 }, 10000);
 
-                // History log every 30 seconds
+                // Freshness sync every 5 seconds to ensure latest info
+                this.freshnessInterval = setInterval(() => {
+                    if (this.isLive && this.battery) {
+                        this.updateFromAPI();
+                    }
+                }, 5000);
+
+                // History log every 10 seconds
                 this.updateInterval = setInterval(() => {
                     if (this.isLive && this.battery) {
                         const level = Math.round(this.battery.level * 100);
@@ -1981,7 +1997,26 @@
                         this.historyData.push(entry);
                         updateHistoryUI();
                     }
-                }, 30000);
+                }, 10000);
+            },
+
+            handleRealtimeNotifications(level, charging) {
+                if (this.lastChargingState === null) {
+                    this.lastChargingState = charging;
+                } else if (this.lastChargingState !== charging) {
+                    this.lastChargingState = charging;
+                    const message = charging ? 'Pengisian daya dimulai.' : 'Pengisian daya berhenti.';
+                    pushRealtimeAlert(message, charging ? 'success' : 'info', true);
+                }
+
+                const lowBatteryBucket = level <= 5 ? 5 : level <= 10 ? 10 : level <= 20 ? 20 : null;
+                if (lowBatteryBucket !== this.lastLowBatteryBucket) {
+                    this.lastLowBatteryBucket = lowBatteryBucket;
+                    if (lowBatteryBucket) {
+                        const message = `Baterai rendah (${level}%). Segera isi daya.`;
+                        pushRealtimeAlert(message, lowBatteryBucket <= 10 ? 'warning' : 'info', true);
+                    }
+                }
             },
 
             setLiveMode(enabled) {
@@ -1993,15 +2028,73 @@
                     document.getElementById('liveModeBtn').style.color = '#000';
                     document.getElementById('manualModeBtn').style.background = 'rgba(255,255,255,0.1)';
                     document.getElementById('manualModeBtn').style.color = 'var(--text-secondary)';
+                    updateLastSyncTime('Battery API');
                 } else {
                     document.getElementById('batterySlider').disabled = false;
                     document.getElementById('manualModeBtn').style.background = 'var(--accent-purple)';
                     document.getElementById('manualModeBtn').style.color = '#fff';
                     document.getElementById('liveModeBtn').style.background = 'rgba(255,255,255,0.1)';
                     document.getElementById('liveModeBtn').style.color = 'var(--text-secondary)';
+                    updateLastSyncTime('Manual');
                 }
             }
         };
+
+        function showBrowserNotification(title, body) {
+            if (!('Notification' in window)) return;
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body });
+            }
+        }
+
+        async function requestNotificationPermission() {
+            if (!('Notification' in window)) return;
+            if (Notification.permission === 'default') {
+                try {
+                    await Notification.requestPermission();
+                } catch (e) {
+                    console.log('Notification permission error:', e);
+                }
+            }
+        }
+
+        function pushRealtimeAlert(message, variant = 'info', notifySystem = false) {
+            const container = document.getElementById('realtimeAlerts');
+            if (!container) return;
+
+            const alert = document.createElement('div');
+            alert.className = `alert-banner ${variant}`;
+            alert.style.marginTop = '8px';
+            alert.innerHTML = `
+                <span class="alert-icon">${variant === 'warning' ? '⚠️' : variant === 'success' ? '✅' : 'ℹ️'}</span>
+                <span>${message}</span>
+            `;
+            container.prepend(alert);
+
+            while (container.children.length > 3) {
+                container.removeChild(container.lastChild);
+            }
+
+            if (notifySystem) {
+                showBrowserNotification('Battery Master', message);
+            }
+        }
+
+        function updateLastSyncTime(source = 'Battery API') {
+            const timeText = new Date().toLocaleTimeString('id-ID');
+            const lastSyncEl = document.getElementById('lastSyncTime');
+            if (lastSyncEl) {
+                lastSyncEl.textContent = `${timeText} (${source})`;
+            }
+        }
+
+        function updateNetworkStatus() {
+            const networkEl = document.getElementById('networkStatus');
+            if (!networkEl) return;
+            const online = navigator.onLine;
+            networkEl.textContent = online ? 'Online' : 'Offline';
+            networkEl.style.color = online ? 'var(--accent-green)' : 'var(--accent-red)';
+        }
 
         // ============================================
         // UI UPDATE FUNCTIONS
@@ -2557,6 +2650,18 @@
         let deviceInfo;
 
         async function init() {
+            updateNetworkStatus();
+            window.addEventListener('online', () => {
+                updateNetworkStatus();
+                pushRealtimeAlert('Koneksi internet kembali online.', 'success', false);
+            });
+            window.addEventListener('offline', () => {
+                updateNetworkStatus();
+                pushRealtimeAlert('Koneksi internet terputus. Data terbaru mungkin tertunda.', 'warning', false);
+            });
+
+            await requestNotificationPermission();
+
             // Detect device
             deviceInfo = DeviceDetector.detect();
 
@@ -2613,6 +2718,7 @@
 
             // Initialize Battery API
             await BatteryEngine.init();
+            updateLastSyncTime(BatteryEngine.battery ? 'Battery API' : 'Manual');
 
             // Initial chart draw
             if (BatteryEngine.battery) {
@@ -2636,4 +2742,3 @@
     </script>
 </body>
 </html>
-
